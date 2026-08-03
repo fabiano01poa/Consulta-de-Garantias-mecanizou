@@ -5,10 +5,13 @@ import { Filters } from './components/Filters';
 import { DetailCard } from './components/DetailCard';
 import { ItemList } from './components/ItemList';
 import { SheetModal } from './components/SheetModal';
+import { GoogleSyncModal } from './components/GoogleSyncModal';
 import { Dashboard } from './components/Dashboard';
 import { KanbanAlerts } from './components/KanbanAlerts';
+import { NegociarView } from './components/NegociarView';
 import { StockItem, FilterState } from './types';
-import { isAllowedWarrantyStatus } from './utils/statusUtils';
+import { isAllowedWarrantyStatus, isItemUrgent } from './utils/statusUtils';
+import { getItemPrimaryTimestamp } from './utils/dateUtils';
 import { AlertTriangle, Sparkles, RefreshCw, Layers } from 'lucide-react';
 
 const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1daGWs2SPXQsN9YLJBggtyX0Wdqpv2kgBcB4mOUrhe7M/edit?gid=1870385864#gid=1870385864";
@@ -20,7 +23,16 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState<string | undefined>();
   const [sheetUrl, setSheetUrl] = useState<string>(DEFAULT_SHEET_URL);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [activeView, setActiveView] = useState<'consulta' | 'dash' | 'alertas'>('consulta');
+  
+  const [webhookUrl, setWebhookUrl] = useState<string>(() => {
+    return localStorage.getItem('gs_webhook_url') || '';
+  });
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
+
+  const [activeView, setActiveView] = useState<'consulta' | 'dash' | 'alertas' | 'negociar'>('consulta');
+  const [selectedLocalidade, setSelectedLocalidade] = useState<string>('todas');
+  const [availableLocalidades, setAvailableLocalidades] = useState<string[]>([]);
+  const [totalSheetRows, setTotalSheetRows] = useState<number>(0);
 
   const [filters, setFilters] = useState<FilterState>({
     idStock: '',
@@ -32,30 +44,37 @@ export default function App() {
   const [detailModalItem, setDetailModalItem] = useState<StockItem | null>(null);
 
   // Fetch data from server
-  const fetchSheetData = async (urlToFetch?: string) => {
+  const fetchSheetData = async (urlToFetch?: string, locToFetch?: string) => {
     setIsLoading(true);
     setStatusMessage(undefined);
 
     try {
       const targetUrl = urlToFetch || sheetUrl;
-      const res = await fetch(`/api/sheet-data?url=${encodeURIComponent(targetUrl)}`);
+      const targetLoc = locToFetch !== undefined ? locToFetch : selectedLocalidade;
+      const res = await fetch(`/api/sheet-data?url=${encodeURIComponent(targetUrl)}&localidade=${encodeURIComponent(targetLoc)}`);
+      
+      const contentType = res.headers.get("content-type");
+      if (!res.ok || !contentType || !contentType.includes("application/json")) {
+        console.warn('Servidor retornou resposta não-JSON ou erro. Utilizando dados de contingência.');
+        setStatusMessage('Não foi possível conectar ao servidor da planilha online no momento. Exibindo dados locais.');
+        return;
+      }
+
       const json = await res.json();
 
       if (json.data && Array.isArray(json.data)) {
-        // Filter specifically by Status Devolução matching official Warranty Statuses (disregarding Localidade column)
-        let finalItems = json.data;
-        const filteredByWarranty = json.data.filter((i: StockItem) => isAllowedWarrantyStatus(i.statusDevolucao));
-        if (filteredByWarranty.length > 0) {
-          finalItems = filteredByWarranty;
-        }
-
-        setItems(finalItems);
+        setItems(json.data);
         setSource(json.source || 'google_sheets');
+        if (json.totalRows) setTotalSheetRows(json.totalRows);
+        if (json.availableLocalidades) setAvailableLocalidades(json.availableLocalidades);
+
         if (json.message) {
           setStatusMessage(json.message);
         }
-        if (finalItems.length > 0 && !selectedItem) {
-          setSelectedItem(finalItems[0]);
+        if (json.data.length > 0) {
+          setSelectedItem(json.data[0]);
+        } else {
+          setSelectedItem(null);
         }
       }
     } catch (error) {
@@ -68,7 +87,7 @@ export default function App() {
 
   useEffect(() => {
     fetchSheetData();
-  }, []);
+  }, [selectedLocalidade]);
 
   // Get list of unique clients for filter dropdown
   const clients = useMemo(() => {
@@ -105,6 +124,13 @@ export default function App() {
         }
       }
 
+      // Filter by Urgentes toggle
+      if (filters.apenasUrgentes) {
+        if (!item.urgente && !item.statusDevolucao?.toLowerCase().includes('urgente')) {
+          return false;
+        }
+      }
+
       // Filter by Search Term (Descrição, Código, Marca, Fornecedor, etc)
       if (filters.searchTerm && filters.searchTerm.trim()) {
         const term = filters.searchTerm.toLowerCase().trim();
@@ -118,6 +144,7 @@ export default function App() {
           ${item.novoFornecedorFilial} 
           ${item.statusDevolucao} 
           ${item.observacoesGerais}
+          ${item.notaFiscalSaida || ''}
         `.toLowerCase();
 
         if (!combinedText.includes(term)) {
@@ -126,33 +153,76 @@ export default function App() {
       }
 
       return true;
-    });
+    }).sort((a, b) => getItemPrimaryTimestamp(b) - getItemPrimaryTimestamp(a));
   }, [items, filters]);
 
-  // Sync selectedItem with active search results
+  // Sync selectedItem with active search results safely
   useEffect(() => {
     if (filteredItems.length > 0) {
-      // If current selected item is in the filtered results, keep it; otherwise set first
       const stillInList = filteredItems.find(i => i.idStock === selectedItem?.idStock);
       if (stillInList) {
-        setSelectedItem(stillInList);
+        if (selectedItem !== stillInList) {
+          setSelectedItem(stillInList);
+        }
       } else {
-        setSelectedItem(filteredItems[0]);
+        if (selectedItem !== filteredItems[0]) {
+          setSelectedItem(filteredItems[0]);
+        }
       }
     } else {
-      setSelectedItem(null);
+      if (selectedItem !== null) {
+        setSelectedItem(null);
+      }
     }
-  }, [filteredItems]);
+  }, [filteredItems, selectedItem]);
 
   const handleFilterChange = (newFilters: Partial<FilterState>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const handleSaveWebhookUrl = (url: string) => {
+    setWebhookUrl(url);
+    localStorage.setItem('gs_webhook_url', url);
+  };
+
+  const syncItemsToServer = async (itemsToSync: StockItem[]) => {
+    try {
+      await fetch('/api/update-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: itemsToSync,
+          webhookUrl: webhookUrl || undefined
+        })
+      });
+    } catch (err) {
+      console.error('Failed to sync items to server:', err);
+    }
+  };
+
+  const handleUpdateItem = (updatedItem: StockItem) => {
+    setItems(prev => prev.map(i => i.idStock === updatedItem.idStock ? updatedItem : i));
+    if (selectedItem?.idStock === updatedItem.idStock) {
+      setSelectedItem(updatedItem);
+    }
+    if (detailModalItem?.idStock === updatedItem.idStock) {
+      setDetailModalItem(updatedItem);
+    }
+    syncItemsToServer([updatedItem]);
+  };
+
+  const handleBatchUpdateStatus = (updatedBatch: StockItem[]) => {
+    const updatedMap = new Map(updatedBatch.map(i => [i.idStock, i]));
+    setItems(prev => prev.map(i => updatedMap.get(i.idStock) || i));
+    syncItemsToServer(updatedBatch);
   };
 
   const handleResetFilters = () => {
     setFilters({
       idStock: '',
       cliente: '',
-      searchTerm: ''
+      searchTerm: '',
+      apenasUrgentes: false
     });
   };
 
@@ -198,23 +268,53 @@ export default function App() {
         message={statusMessage}
         totalItems={items.length}
         onOpenSheetModal={() => setIsModalOpen(true)}
+        onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        hasWebhookConfigured={!!webhookUrl}
         activeView={activeView}
         onViewChange={setActiveView}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
-        {/* Active Location Filter Banner */}
-        <div className="bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-3 mb-6 flex items-center justify-between text-xs text-indigo-200">
+        {/* Active Warranty Status Filter Banner */}
+        <div className="bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-3 mb-6 flex flex-wrap items-center justify-between gap-3 text-xs text-indigo-200">
+          <div className="flex items-center space-x-2.5 flex-wrap">
+            <span className="p-1.5 bg-indigo-900/80 rounded-lg text-indigo-400 font-bold flex-shrink-0">🛡️</span>
+            <span className="font-medium text-slate-300">
+              Leitura de Status de Garantia Ativa
+            </span>
+            <span className="text-emerald-400 font-semibold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60">
+              {totalSheetRows > 0 ? `${totalSheetRows.toLocaleString('pt-BR')} itens de garantia identificados` : `${items.length} itens de garantia`}
+            </span>
+
+            <div className="flex items-center space-x-1.5 ml-2">
+              <span className="text-slate-400 font-medium">Localidade:</span>
+              <select
+                value={selectedLocalidade}
+                onChange={(e) => setSelectedLocalidade(e.target.value)}
+                className="bg-indigo-950 border border-indigo-700/80 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:ring-1 focus:ring-indigo-400 outline-none cursor-pointer"
+              >
+                <option value="todas">Todas as Localidades ({totalSheetRows > 0 ? totalSheetRows.toLocaleString('pt-BR') : items.length} itens)</option>
+                {availableLocalidades.map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="flex items-center space-x-2">
-            <span className="p-1 bg-indigo-900/60 rounded text-indigo-400 font-bold">📍</span>
-            <span>
-              Filtro de Localidade Ativo: <strong className="text-white">Mecanizou - Garantia</strong> ({items.length} itens correspondentes na planilha)
+            {selectedLocalidade !== 'todas' && (
+              <button
+                onClick={() => setSelectedLocalidade('todas')}
+                className="text-[11px] text-indigo-400 hover:text-white underline font-semibold transition-colors"
+              >
+                Ver Todas as Localidades
+              </button>
+            )}
+            <span className="text-[11px] text-indigo-300/80 bg-indigo-900/60 px-2 py-0.5 rounded border border-indigo-700/50 hidden sm:inline">
+              Filtro por Coluna Status Devolução
             </span>
           </div>
-          <span className="text-[11px] text-indigo-300/80 bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-700/50 hidden sm:inline">
-            Filtro de origem aplicado
-          </span>
         </div>
 
         {/* Status Alert Banner if in Fallback or Notice */}
@@ -233,7 +333,7 @@ export default function App() {
           </div>
         )}
 
-        {/* View Switch: Dashboard vs Alertas vs Consulta */}
+        {/* View Switch: Dashboard vs Alertas vs Negociar vs Consulta */}
         {activeView === 'dash' ? (
           <Dashboard
             items={items}
@@ -249,6 +349,15 @@ export default function App() {
               setSelectedItem(item);
               setDetailModalItem(item);
             }}
+          />
+        ) : activeView === 'negociar' ? (
+          <NegociarView
+            items={items}
+            onSelectItem={(item) => {
+              setSelectedItem(item);
+              setDetailModalItem(item);
+            }}
+            onBatchUpdateStatus={handleBatchUpdateStatus}
           />
         ) : (
           <>
@@ -309,6 +418,7 @@ export default function App() {
                       totalMatching={filteredItems.length}
                       onNextItem={handleNextItem}
                       onPrevItem={handlePrevItem}
+                      onUpdateItem={handleUpdateItem}
                     />
                   </div>
                 )}
@@ -339,10 +449,19 @@ export default function App() {
                 setDetailModalItem(filteredItems[prevIdx]);
               }}
               onClose={() => setDetailModalItem(null)}
+              onUpdateItem={handleUpdateItem}
             />
           </div>
         </div>
       )}
+
+      {/* Google Sheets Sync Modal */}
+      <GoogleSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        webhookUrl={webhookUrl}
+        onSaveWebhookUrl={handleSaveWebhookUrl}
+      />
 
       {/* Sheet Management Modal */}
       <SheetModal

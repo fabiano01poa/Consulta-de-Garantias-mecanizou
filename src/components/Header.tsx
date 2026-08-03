@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Layers, Search, BarChart2, Kanban } from 'lucide-react';
+import { RefreshCw, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Layers, Search, BarChart2, Kanban, Handshake } from 'lucide-react';
 
 interface HeaderProps {
   onSync: () => void;
@@ -8,8 +8,10 @@ interface HeaderProps {
   message?: string;
   totalItems: number;
   onOpenSheetModal: () => void;
-  activeView: 'consulta' | 'dash' | 'alertas';
-  onViewChange: (view: 'consulta' | 'dash' | 'alertas') => void;
+  onOpenSyncModal?: () => void;
+  hasWebhookConfigured?: boolean;
+  activeView: 'consulta' | 'dash' | 'alertas' | 'negociar';
+  onViewChange: (view: 'consulta' | 'dash' | 'alertas' | 'negociar') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,6 +21,8 @@ export const Header: React.FC<HeaderProps> = ({
   message,
   totalItems,
   onOpenSheetModal,
+  onOpenSyncModal,
+  hasWebhookConfigured,
   activeView,
   onViewChange
 }) => {
@@ -93,10 +97,21 @@ export const Header: React.FC<HeaderProps> = ({
               <Kanban className="w-3.5 h-3.5" />
               <span>Alertas Kanban</span>
             </button>
+            <button
+              onClick={() => onViewChange('negociar')}
+              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeView === 'negociar'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Handshake className="w-3.5 h-3.5" />
+              <span>Negociar</span>
+            </button>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center space-x-2 sm:space-x-3 self-end md:self-auto">
+          <div className="flex items-center space-x-2 sm:space-x-3 self-end md:self-auto flex-wrap gap-y-1">
             <button
               onClick={onSync}
               disabled={isLoading}
@@ -106,6 +121,21 @@ export const Header: React.FC<HeaderProps> = ({
               <RefreshCw className={`w-4 h-4 mr-1.5 text-indigo-400 ${isLoading ? 'animate-spin' : ''}`} />
               <span>{isLoading ? 'Sincronizando...' : 'Sincronizar'}</span>
             </button>
+
+            {onOpenSyncModal && (
+              <button
+                onClick={onOpenSyncModal}
+                className={`inline-flex items-center px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all duration-150 active:scale-95 border shadow-sm ${
+                  hasWebhookConfigured
+                    ? 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-700'
+                    : 'bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border-indigo-700'
+                }`}
+                title="Configurar vinculo com a Planilha Google para salvar edições diretamente no Google Sheets"
+              >
+                <CheckCircle2 className={`w-4 h-4 mr-1.5 ${hasWebhookConfigured ? 'text-emerald-400' : 'text-indigo-400'}`} />
+                <span>{hasWebhookConfigured ? 'Gravação Ativa' : 'Vincular Gravação'}</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenSheetModal}

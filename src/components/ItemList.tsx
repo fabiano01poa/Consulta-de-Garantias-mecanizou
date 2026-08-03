@@ -1,7 +1,8 @@
-import React from 'react';
-import { Package, ChevronRight, Eye, Calendar, Clock, Boxes, User, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, ChevronRight, Eye, Calendar, Clock, Boxes, User, Tag, ChevronLeft, Flame } from 'lucide-react';
 import { StockItem } from '../types';
 import { calculateDaysSinceDeparture, getDaysFromDate } from '../utils/dateUtils';
+import { isItemUrgent } from '../utils/statusUtils';
 import { TimelineBar } from './TimelineBar';
 
 interface ResultsTableProps {
@@ -15,6 +16,14 @@ export const ItemList: React.FC<ResultsTableProps> = ({
   selectedItem,
   onSelectItem,
 }) => {
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+
+  // Reset to page 1 if items list length changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [items.length]);
+
   if (items.length === 0) {
     return (
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center my-6">
@@ -29,20 +38,67 @@ export const ItemList: React.FC<ResultsTableProps> = ({
     );
   }
 
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (validCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, items.length);
+  const currentItems = items.slice(startIndex, endIndex);
+
   return (
     <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl overflow-hidden shadow-2xl mb-8 backdrop-blur-sm">
-      {/* Table Header Controls */}
-      <div className="px-5 py-4 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between flex-wrap gap-2">
+      {/* Table Header Controls & Pagination Summary */}
+      <div className="px-5 py-4 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center space-x-2">
           <Boxes className="w-4 h-4 text-indigo-400" />
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-            Tabela de Consulta de Itens em Linha ({items.length})
+            Tabela de Consulta ({items.length} itens no total)
           </h3>
         </div>
-        <span className="text-[11px] text-indigo-400 font-medium bg-indigo-950/60 px-3 py-1 rounded-full border border-indigo-800/60 flex items-center">
-          <Eye className="w-3.5 h-3.5 mr-1 text-indigo-300" />
-          Clique em qualquer linha para abrir a ficha completa com todas as colunas
-        </span>
+
+        <div className="flex items-center space-x-3 flex-wrap gap-2">
+          <div className="flex items-center space-x-1 text-xs text-slate-400">
+            <span>Exibir:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-lg px-2 py-1 outline-none font-medium"
+            >
+              <option value={20}>20 por pág.</option>
+              <option value={50}>50 por pág.</option>
+              <option value={100}>100 por pág.</option>
+            </select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-slate-400 font-mono">
+              {startIndex + 1}-{endIndex} de {items.length}
+            </span>
+            <div className="flex items-center space-x-1">
+              <button
+                disabled={validCurrentPage <= 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="p-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg border border-slate-700/60 transition-colors"
+                title="Página Anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs text-slate-300 font-bold px-1.5">
+                {validCurrentPage} / {totalPages}
+              </span>
+              <button
+                disabled={validCurrentPage >= totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="p-1 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg border border-slate-700/60 transition-colors"
+                title="Próxima Página"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Table Body */}
@@ -62,7 +118,7 @@ export const ItemList: React.FC<ResultsTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 text-xs">
-            {items.map((item, idx) => {
+            {currentItems.map((item, idx) => {
               const daysInfo = calculateDaysSinceDeparture(item.dataSaida);
               const daysVal = getDaysFromDate(item.dataSaida) ?? getDaysFromDate(item.dataRecebimento);
               const isSelected = selectedItem?.idStock === item.idStock;
@@ -79,7 +135,14 @@ export const ItemList: React.FC<ResultsTableProps> = ({
                 >
                   {/* ID STOCK */}
                   <td className="py-3.5 px-4 font-mono font-bold text-indigo-400 whitespace-nowrap">
-                    {item.idStock || '—'}
+                    <div className="flex items-center space-x-1.5">
+                      <span>{item.idStock || '—'}</span>
+                      {isItemUrgent(item) && (
+                        <span className="bg-red-950 text-red-300 border border-red-700 text-[10px] font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5 animate-pulse" title="Item Urgente">
+                          <Flame className="w-3 h-3 text-red-400 fill-red-400" /> URGENTE
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Cliente */}
@@ -164,6 +227,32 @@ export const ItemList: React.FC<ResultsTableProps> = ({
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Bottom Footer Pagination Bar */}
+      <div className="px-5 py-3.5 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-400">
+        <div>
+          Mostrando <span className="font-bold text-slate-200">{startIndex + 1}</span> a <span className="font-bold text-slate-200">{endIndex}</span> de <span className="font-bold text-slate-200">{items.length}</span> registros
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            disabled={validCurrentPage <= 1}
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg border border-slate-700/60 font-semibold transition-colors flex items-center"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 mr-1" /> Anterior
+          </button>
+          <span className="font-bold text-slate-300 px-2">
+            {validCurrentPage} / {totalPages}
+          </span>
+          <button
+            disabled={validCurrentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-lg border border-slate-700/60 font-semibold transition-colors flex items-center"
+          >
+            Próximo <ChevronRight className="w-3.5 h-3.5 ml-1" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -13,10 +13,13 @@ import {
   Eye, 
   Tag, 
   ChevronRight,
-  Boxes
+  Boxes,
+  Flame,
+  FileText
 } from 'lucide-react';
 import { StockItem } from '../types';
 import { getDaysFromDate } from '../utils/dateUtils';
+import { isFinalizedStatus, isItemUrgent } from '../utils/statusUtils';
 import { TimelineBar } from './TimelineBar';
 
 interface KanbanAlertsProps {
@@ -24,10 +27,10 @@ interface KanbanAlertsProps {
   onSelectItem: (item: StockItem) => void;
 }
 
-type KanbanFlow = 'enviadas' | 'recebidas';
+type KanbanFlow = 'enviadas' | 'recebidas' | 'incidencia';
 
 interface AgeGroup {
-  id: '0-30' | '30-60' | '60-90' | '90+';
+  id: '0-30' | '30-60' | '60-90' | '90+' | 'finalizados';
   title: string;
   subTitle: string;
   minDays: number;
@@ -87,6 +90,18 @@ const AGE_GROUPS: AgeGroup[] = [
     textColor: 'text-red-200',
     badgeBg: 'bg-red-600/30 text-red-200 border-red-700',
     iconColor: 'text-red-400'
+  },
+  {
+    id: 'finalizados',
+    title: 'Finalizados',
+    subTitle: 'Tempo Parado (0d)',
+    minDays: 0,
+    maxDays: 0,
+    headerBg: 'bg-blue-950/90',
+    borderColor: 'border-blue-800/90',
+    textColor: 'text-blue-200',
+    badgeBg: 'bg-blue-600/30 text-blue-200 border-blue-700',
+    iconColor: 'text-blue-400'
   }
 ];
 
@@ -94,6 +109,14 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
   const [flow, setFlow] = useState<KanbanFlow>('enviadas');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [apenasUrgentes, setApenasUrgentes] = useState<boolean>(false);
+  const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({
+    '0-30': 25,
+    '30-60': 25,
+    '60-90': 25,
+    '90+': 25,
+    'finalizados': 25
+  });
 
   // List of unique statuses for dropdown
   const statusList = useMemo(() => {
@@ -106,24 +129,35 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
     return Array.from(set).sort();
   }, [items]);
 
-  // Process items and add calculated days based on active flow
+  // Process items and add calculated days based on active flow and finalized status
   const processedItems = useMemo(() => {
     return items
       .map(item => {
-        const dateStr = flow === 'enviadas' ? item.dataSaida : item.dataRecebimento;
-        const days = getDaysFromDate(dateStr);
+        const isFinal = isFinalizedStatus(item.statusDevolucao);
+        const dateStr = flow === 'enviadas' ? item.dataSaida : flow === 'recebidas' ? item.dataRecebimento : item.dataIncidencia;
+        const rawDays = getDaysFromDate(dateStr);
+        // If status is finalized, count stops at 0
+        const days = isFinal ? 0 : rawDays;
         return {
           item,
           days,
-          dateStr
+          dateStr,
+          isFinal
         };
       })
-      .filter(({ item, days }) => {
-        // Filter out items without valid days
-        if (days === null || isNaN(days) || days < 0) return false;
+      .filter(({ item, days, isFinal }) => {
+        // Filter out items without valid days unless finalized
+        if (!isFinal && (days === null || isNaN(days) || days < 0)) return false;
 
         // Apply status filter
-        if (selectedStatus !== 'all' && (item.statusDevolucao?.trim() || '') !== selectedStatus) {
+        if (selectedStatus === 'urgente') {
+          if (!isItemUrgent(item)) return false;
+        } else if (selectedStatus !== 'all' && (item.statusDevolucao?.trim() || '') !== selectedStatus) {
+          return false;
+        }
+
+        // Apply urgent toggle filter
+        if (apenasUrgentes && !isItemUrgent(item)) {
           return false;
         }
 
@@ -137,24 +171,31 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
             ${item.codigo} 
             ${item.marca} 
             ${item.statusDevolucao}
+            ${item.notaFiscalSaida || ''}
           `.toLowerCase();
           if (!text.includes(term)) return false;
         }
 
         return true;
       });
-  }, [items, flow, selectedStatus, searchTerm]);
+  }, [items, flow, selectedStatus, apenasUrgentes, searchTerm]);
 
-  // Group items into the 4 age columns
+  // Group items into the 5 columns
   const columns = useMemo(() => {
     const map: Record<string, typeof processedItems> = {
       '0-30': [],
       '30-60': [],
       '60-90': [],
-      '90+': []
+      '90+': [],
+      'finalizados': []
     };
 
     processedItems.forEach(entry => {
+      if (entry.isFinal) {
+        map['finalizados'].push(entry);
+        return;
+      }
+
       const d = entry.days ?? 0;
       if (d <= 30) {
         map['0-30'].push(entry);
@@ -191,12 +232,12 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
               Quadro de Acompanhamento por Prazos
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Organização automática de itens por faixas de idade (0, 30, 60, 90+ dias)
+              Organização automática de itens por faixas de idade (0, 30, 60, 90+ dias e Finalizados)
             </p>
           </div>
 
           {/* Flow Selector Tabs */}
-          <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center space-x-1 self-start md:self-auto">
+          <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center space-x-1 self-start md:self-auto flex-wrap gap-1">
             <button
               onClick={() => setFlow('enviadas')}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
@@ -206,7 +247,7 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
               }`}
             >
               <Truck className="w-4 h-4" />
-              <span>Enviadas / Saída (Hoje - Data Saída)</span>
+              <span>Enviadas / Saída (Data Saída)</span>
             </button>
             <button
               onClick={() => setFlow('recebidas')}
@@ -217,42 +258,68 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
               }`}
             >
               <PackageCheck className="w-4 h-4" />
-              <span>Recebidas em Estoque (Hoje - Data Recebimento)</span>
+              <span>Recebidas em Estoque (Data Recebimento)</span>
+            </button>
+            <button
+              onClick={() => setFlow('incidencia')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                flow === 'incidencia'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4 text-purple-400" />
+              <span>Data de Incidência (Coluna Q)</span>
             </button>
           </div>
         </div>
 
         {/* Search & Filter Bar */}
         <div className="pt-4 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-          <div className="md:col-span-7 relative">
+          <div className="md:col-span-6 relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar no Kanban por ID Stock, Cliente, Código, Peça ou Marca..."
+              placeholder="Buscar no Kanban por ID Stock, Cliente, Código, Peça, Marca ou NF Saída..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 outline-none placeholder:text-slate-500"
             />
           </div>
 
-          <div className="md:col-span-5 flex items-center space-x-2">
+          <div className="md:col-span-4 flex items-center space-x-2">
             <Filter className="w-4 h-4 text-slate-400 shrink-0" />
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none font-semibold"
             >
-              <option value="all">Filtrar por Status ({items.length} itens)</option>
+              <option value="all">Todos os Status ({items.length} itens)</option>
+              <option value="urgente">🔥 Apenas Itens Urgentes</option>
               {statusList.map((st, idx) => (
                 <option key={`kanban-st-${st}-${idx}`} value={st}>{st}</option>
               ))}
             </select>
           </div>
+
+          <div className="md:col-span-2">
+            <button
+              onClick={() => setApenasUrgentes(!apenasUrgentes)}
+              className={`w-full py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                apenasUrgentes 
+                  ? 'bg-red-950 text-red-300 border-red-700 shadow-md' 
+                  : 'bg-slate-950 hover:bg-slate-900 text-slate-400 border-slate-800'
+              }`}
+            >
+              <Flame className={`w-3.5 h-3.5 ${apenasUrgentes ? 'text-red-400 fill-red-400' : 'text-slate-500'}`} />
+              <span>{apenasUrgentes ? 'Urgentes On' : 'Urgentes'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Kanban Grid Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+      {/* Kanban Grid Columns (5 Columns) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 items-start">
         {AGE_GROUPS.map(group => {
           const groupItems = columns[group.id] || [];
           const groupPercentage = totalValid > 0 ? ((groupItems.length / totalValid) * 100).toFixed(0) : '0';
@@ -260,94 +327,142 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
           return (
             <div 
               key={group.id}
-              className="bg-slate-900/80 border border-slate-800/80 rounded-2xl flex flex-col max-h-[800px] shadow-xl overflow-hidden"
+              className="bg-slate-900/80 border border-slate-800/80 rounded-2xl flex flex-col max-h-[820px] shadow-xl overflow-hidden"
             >
               {/* Column Header */}
-              <div className={`p-4 border-b ${group.headerBg} ${group.borderColor} flex items-center justify-between`}>
+              <div className={`p-3.5 border-b ${group.headerBg} ${group.borderColor} flex items-center justify-between`}>
                 <div className="flex items-center space-x-2">
                   <Clock className={`w-4 h-4 ${group.iconColor}`} />
                   <div>
-                    <h3 className={`text-sm font-black tracking-tight ${group.textColor}`}>
+                    <h3 className={`text-xs font-black tracking-tight ${group.textColor}`}>
                       {group.title}
                     </h3>
-                    <p className="text-[11px] text-slate-400 font-medium">
+                    <p className="text-[10px] text-slate-400 font-medium">
                       {group.subTitle}
                     </p>
                   </div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-black border ${group.badgeBg}`}>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-black border ${group.badgeBg}`}>
                   {groupItems.length}
                 </span>
               </div>
 
               {/* Column Body Cards List */}
-              <div className="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar min-h-[250px]">
+              <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1 custom-scrollbar min-h-[250px]">
                 {groupItems.length === 0 ? (
                   <div className="py-12 text-center text-slate-600 border border-dashed border-slate-800/80 rounded-xl">
                     <CheckCircle2 className="w-6 h-6 mx-auto mb-1 opacity-50" />
                     <p className="text-xs font-semibold">Nenhum item nesta faixa</p>
                   </div>
                 ) : (
-                  groupItems.map(({ item, days, dateStr }, cardIdx) => (
-                    <div
-                      key={`${item.idStock || 'card'}-${cardIdx}`}
-                      onClick={() => onSelectItem(item)}
-                      className="bg-slate-950 hover:bg-slate-900/90 border border-slate-800/80 hover:border-slate-700/80 rounded-xl p-3.5 shadow-md cursor-pointer transition-all hover:scale-[1.01] group space-y-2.5"
-                    >
-                      {/* Top Row: ID Stock & Days Badge */}
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono font-bold text-indigo-400 text-xs bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/80">
-                          {item.idStock}
-                        </span>
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${group.badgeBg}`}>
-                          {days} {days === 1 ? 'dia' : 'dias'}
-                        </span>
-                      </div>
-
-                      {/* Cliente */}
-                      <div>
-                        <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center">
-                          <Building2 className="w-3 h-3 mr-1 text-slate-400" /> Cliente / Oficina
-                        </div>
-                        <div className="text-xs font-bold text-slate-100 truncate mt-0.5">
-                          {item.cliente || 'Não Informado'}
-                        </div>
-                      </div>
-
-                      {/* Description & Code */}
-                      <div>
-                        <div className="text-xs font-semibold text-slate-300 line-clamp-2">
-                          {item.descricao || 'Peça sem descrição'}
-                        </div>
-                        <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
-                          <span>Cód: <strong className="text-slate-200">{item.codigo || '—'}</strong></span>
-                          <span>Marca: <strong className="text-slate-200">{item.marca || '—'}</strong></span>
-                        </div>
-                      </div>
-
-                      {/* Status Tag */}
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-900">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-slate-900 text-indigo-300 rounded border border-slate-800 max-w-[170px] truncate">
-                          {item.statusDevolucao || 'Pendente'}
-                        </span>
-                        <button 
-                          className="p-1 text-slate-500 group-hover:text-white transition-colors"
-                          title="Abrir Ficha"
+                  <>
+                    {groupItems.slice(0, visibleCounts[group.id] || 25).map(({ item, days, isFinal }, cardIdx) => {
+                      const urgent = isItemUrgent(item);
+                      return (
+                        <div
+                          key={`${item.idStock || 'card'}-${cardIdx}`}
+                          onClick={() => onSelectItem(item)}
+                          className={`bg-slate-950 hover:bg-slate-900/90 border ${
+                            urgent 
+                              ? 'border-red-800/90 shadow-red-950/20' 
+                              : isFinal 
+                                ? 'border-blue-900/60' 
+                                : 'border-slate-800/80 hover:border-slate-700/80'
+                          } rounded-xl p-3 shadow-md cursor-pointer transition-all hover:scale-[1.01] group space-y-2`}
                         >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
+                          {/* Top Row: ID Stock & Days Badge */}
+                          <div className="flex items-center justify-between gap-1 flex-wrap">
+                            <div className="flex items-center space-x-1">
+                              <span className="font-mono font-bold text-indigo-400 text-xs bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/80">
+                                {item.idStock}
+                              </span>
+                              {urgent && (
+                                <span className="bg-red-950 text-red-300 border border-red-700 text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                  <Flame className="w-2.5 h-2.5 fill-red-400 text-red-400" /> URGENTE
+                                </span>
+                              )}
+                            </div>
+                            
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              isFinal 
+                                ? 'bg-blue-950 text-blue-300 border-blue-800' 
+                                : group.badgeBg
+                            }`}>
+                              {isFinal ? 'Parado (0d)' : `${days} ${days === 1 ? 'dia' : 'dias'}`}
+                            </span>
+                          </div>
 
-                      {/* Timeline Bar Mini */}
-                      <TimelineBar days={days} compact={true} />
-                    </div>
-                  ))
+                          {/* Cliente */}
+                          <div>
+                            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center">
+                              <Building2 className="w-3 h-3 mr-1 text-slate-400" /> Cliente / Oficina
+                            </div>
+                            <div className="text-xs font-bold text-slate-100 truncate mt-0.5">
+                              {item.cliente || 'Não Informado'}
+                            </div>
+                          </div>
+
+                          {/* Description & Code */}
+                          <div>
+                            <div className="text-xs font-semibold text-slate-300 line-clamp-2">
+                              {item.descricao || 'Peça sem descrição'}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                              <span>Cód: <strong className="text-slate-200">{item.codigo || '—'}</strong></span>
+                              <span>Marca: <strong className="text-slate-200">{item.marca || '—'}</strong></span>
+                            </div>
+                          </div>
+
+                          {/* NF de Saída if available */}
+                          {item.notaFiscalSaida && (
+                            <div className="text-[10px] text-amber-300 font-mono bg-amber-950/40 px-2 py-0.5 rounded border border-amber-900/60 flex items-center gap-1">
+                              <FileText className="w-3 h-3 text-amber-400" /> NF Saída: {item.notaFiscalSaida}
+                            </div>
+                          )}
+
+                          {/* Status Tag */}
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-900">
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border max-w-[140px] truncate ${
+                              isFinal 
+                                ? 'bg-emerald-950 text-emerald-300 border-emerald-800' 
+                                : 'bg-slate-900 text-indigo-300 border-slate-800'
+                            }`}>
+                              {item.statusDevolucao || 'Pendente'}
+                            </span>
+                            <button 
+                              className="p-1 text-slate-500 group-hover:text-white transition-colors"
+                              title="Abrir Ficha"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          {/* Timeline Bar Mini */}
+                          <TimelineBar days={days} compact={true} />
+                        </div>
+                      );
+                    })}
+
+                    {groupItems.length > (visibleCounts[group.id] || 25) && (
+                      <button
+                        onClick={() => {
+                          setVisibleCounts(prev => ({
+                            ...prev,
+                            [group.id]: (prev[group.id] || 25) + 25
+                          }));
+                        }}
+                        className="w-full py-2 bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-800/80 rounded-xl text-xs font-bold transition-colors shadow-sm"
+                      >
+                        Mais +25 (Restam {groupItems.length - (visibleCounts[group.id] || 25)})
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Column Footer */}
-              <div className="p-2.5 bg-slate-950/80 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between items-center font-medium">
-                <span>Total nesta faixa</span>
+              <div className="p-2.5 bg-slate-950/80 border-t border-slate-800 text-[10px] text-slate-400 flex justify-between items-center font-medium">
+                <span>Total na coluna</span>
                 <span className="font-bold text-slate-200 font-mono">
                   {groupItems.length} ({groupPercentage}%)
                 </span>
@@ -359,3 +474,4 @@ export const KanbanAlerts: React.FC<KanbanAlertsProps> = ({ items, onSelectItem 
     </div>
   );
 };
+

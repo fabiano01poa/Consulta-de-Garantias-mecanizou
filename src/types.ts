@@ -1,3 +1,9 @@
+export interface HistoryEntry {
+  data: string;
+  acao: string;
+  detalhe?: string;
+}
+
 export interface StockItem {
   idStock: string;
   cliente: string;
@@ -13,17 +19,26 @@ export interface StockItem {
   localidade?: string;
   dataRecebimento?: string;
   dataSaida?: string;
+  dataIncidencia?: string;
   protocolo?: string;
   valorUnitario?: string;
   valorTotal?: string;
   motivo?: string;
   dataSolicitacao?: string;
+  dataCompra?: string;
+  nfOrigem?: string;
+  notaFiscalSaida?: string;
+  dataUltimaAlteracao?: string;
+  ultimaInteracao?: string;
+  urgente?: boolean;
+  historicoAlteracoes?: HistoryEntry[];
 }
 
 export interface FilterState {
   idStock: string;
   cliente: string;
   searchTerm: string;
+  apenasUrgentes?: boolean;
 }
 
 export interface SheetFetchResult {

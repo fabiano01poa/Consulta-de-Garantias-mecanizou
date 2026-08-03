@@ -1,3 +1,5 @@
+import { StockItem } from '../types';
+
 export interface DateDaysInfo {
   days: number | null;
   formattedText: string;
@@ -108,6 +110,27 @@ export function calculateDaysInStock(dataRecebimentoStr?: string): DateDaysInfo 
       badgeColorClass: 'bg-purple-950 text-purple-300 border-purple-800'
     };
   }
+}
+
+export function getItemPrimaryTimestamp(item: StockItem): number {
+  const dates = [
+    item.dataRecebimento,
+    item.dataSolicitacao,
+    item.dataCompra,
+    item.dataSaida,
+    item.dataUltimaAlteracao
+  ];
+  for (const dStr of dates) {
+    if (dStr) {
+      const parsed = parseDateString(dStr);
+      if (parsed) return parsed.getTime();
+    }
+  }
+  if (item.idStock) {
+    const num = parseInt(item.idStock.replace(/\D/g, ''), 10);
+    if (!isNaN(num)) return num;
+  }
+  return 0;
 }
 
 export function calculateDaysSinceDeparture(dataSaidaStr?: string): DateDaysInfo {

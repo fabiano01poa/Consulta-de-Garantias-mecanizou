@@ -35,15 +35,20 @@ function normalizeStatusStr(s?: string): string {
     .trim();
 }
 
+function canonicalizeWarrantyStatus(rawStatus?: string): string {
+  if (!rawStatus || !rawStatus.trim()) return "";
+  return rawStatus.trim();
+}
+
 function isAllowedWarrantyStatus(statusStr?: string): boolean {
   if (!statusStr || !statusStr.trim()) return false;
-  const cleanInput = normalizeStatusStr(statusStr);
-  if (!cleanInput) return false;
+  const clean = normalizeStatusStr(statusStr);
+  if (!clean) return false;
 
-  return OFFICIAL_WARRANTY_STATUSES.some(official => {
-    const cleanOfficial = normalizeStatusStr(official);
-    return cleanInput === cleanOfficial || cleanInput.includes(cleanOfficial) || cleanOfficial.includes(cleanInput);
-  });
+  // Must contain "garantia"
+  if (clean.includes("garantia")) return true;
+
+  return false;
 }
 
 // Sample fallback dataset matching the user's spreadsheet structure and screenshot visual requirements
@@ -62,7 +67,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "a peça não esta dando freio, cliente solicita troca urgente pela garantia de fabricação.",
     localidade: "Mecanizou - Garantia",
     dataRecebimento: "10/07/2026",
-    dataSaida: "20/07/2026"
+    dataSaida: "20/07/2026",
+    valorUnitario: "R$ 180,00",
+    valorTotal: "R$ 2.160,00",
+    dataCompra: "01/06/2026",
+    nfOrigem: "NF-8821"
   },
   {
     idStock: "STK-1002",
@@ -78,7 +87,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "Embalagem avariada no transporte. Reembolso via Cupom de Crédito liberado.",
     localidade: "Mecanizou - Garantia",
     dataRecebimento: "05/07/2026",
-    dataSaida: "15/07/2026"
+    dataSaida: "15/07/2026",
+    valorUnitario: "R$ 145,00",
+    valorTotal: "R$ 1.160,00",
+    dataCompra: "15/05/2026",
+    nfOrigem: "NF-48291"
   },
   {
     idStock: "STK-1003",
@@ -94,7 +107,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "Ruído ao passar por lombadas. Encaminhado para perícia técnica da fábrica.",
     localidade: "Mecanizou - Garantia",
     dataRecebimento: "12/07/2026",
-    dataSaida: "25/07/2026"
+    dataSaida: "25/07/2026",
+    valorUnitario: "R$ 220,00",
+    valorTotal: "R$ 1.100,00",
+    dataCompra: "10/06/2026",
+    nfOrigem: "NF-39102"
   },
   {
     idStock: "STK-1004",
@@ -107,10 +124,14 @@ const SAMPLE_DATA = [
     novoFornecedorFilial: "Filial RJ - Duque de Caxias",
     statusDevolucao: "Garantia: Emitir NF",
     obsNotaFiscal: "Nota Fiscal de devolução emitida com sucesso NF-e 10923.",
-    observacoesGerais: "Item aplicado em teste e devolvido. Caixa original preservada.",
+    observacoesGerais: "Item applied in test and returned. Original box preserved.",
     localidade: "Mecanizou - Garantia",
     dataRecebimento: "01/07/2026",
-    dataSaida: "10/07/2026"
+    dataSaida: "10/07/2026",
+    valorUnitario: "R$ 680,00",
+    valorTotal: "R$ 2.040,00",
+    dataCompra: "20/05/2026",
+    nfOrigem: "NF-10923"
   },
   {
     idStock: "STK-1005",
@@ -126,7 +147,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "Aplicação incompatível com o modelo do veículo informado pelo cliente.",
     localidade: "Mecanizou - Garantia",
     dataRecebimento: "15/07/2026",
-    dataSaida: "28/07/2026"
+    dataSaida: "28/07/2026",
+    valorUnitario: "R$ 45,00",
+    valorTotal: "R$ 1.080,00",
+    dataCompra: "05/06/2026",
+    nfOrigem: "NF-77401"
   },
   {
     idStock: "STK-1006",
@@ -142,7 +167,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "Sem marcas de defeito de fabricação. Desgaste natural constatado.",
     localidade: "Mecanizou - Garantia",
     dataRecebimento: "20/06/2026",
-    dataSaida: "02/07/2026"
+    dataSaida: "02/07/2026",
+    valorUnitario: "R$ 85,00",
+    valorTotal: "R$ 1.275,00",
+    dataCompra: "01/04/2026",
+    nfOrigem: "NF-55109"
   },
   {
     idStock: "STK-1007",
@@ -158,7 +187,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "Bomba travada sem vazamento.",
     localidade: "Estoque Geral",
     dataRecebimento: "18/06/2026",
-    dataSaida: "22/06/2026"
+    dataSaida: "22/06/2026",
+    valorUnitario: "R$ 310,00",
+    valorTotal: "R$ 1.860,00",
+    dataCompra: "10/05/2026",
+    nfOrigem: "NF-88301"
   },
   {
     idStock: "STK-1008",
@@ -174,7 +207,11 @@ const SAMPLE_DATA = [
     observacoesGerais: "Ruído excessivo após 100km.",
     localidade: "Estoque Geral",
     dataRecebimento: "02/05/2026",
-    dataSaida: "10/05/2026"
+    dataSaida: "10/05/2026",
+    valorUnitario: "R$ 120,00",
+    valorTotal: "R$ 1.200,00",
+    dataCompra: "15/04/2026",
+    nfOrigem: "NF-22390"
   },
   {
     idStock: "STK-1009",
@@ -186,11 +223,15 @@ const SAMPLE_DATA = [
     fornecedor: "Turbo Brasil Express",
     novoFornecedorFilial: "Filial PR - Curitiba",
     statusDevolucao: "Garantia: Não negociado",
-    obsNotaFiscal: "Sem acordo comercil no momento.",
+    obsNotaFiscal: "Sem acordo comercial no momento.",
     observacoesGerais: "Falta laudo técnico do instalador.",
     localidade: "Estoque Geral",
     dataRecebimento: "10/04/2026",
-    dataSaida: "18/04/2026"
+    dataSaida: "18/04/2026",
+    valorUnitario: "R$ 1.850,00",
+    valorTotal: "R$ 3.700,00",
+    dataCompra: "01/03/2026",
+    nfOrigem: "NF-90182"
   }
 ];
 
@@ -269,7 +310,16 @@ function normalizeRow(row: any) {
     observacoesGerais: getVal("Observações gerais do item", "Observações Gerais", "Obs Gerais", "Observação", "Obs", "Motivo", "Observacoes"),
     localidade: getVal("Localidade", "LOCALIDADE", "Localizacao", "Localização", "Local"),
     dataRecebimento: getVal("Data_Recebimento", "Data Recebimento", "DataRecebimento", "Data de Recebimento", "Data Rec", "Recebimento"),
-    dataSaida: getVal("Data_saida", "Data Saida", "Data_Saida", "Data de Saida", "Data Env", "Data Envio", "Envio")
+    dataSaida: getVal("Data_saida", "Data Saida", "Data_Saida", "Data de Saida", "Data Env", "Data Envio", "Envio"),
+    dataIncidencia: getVal("Data de incidência", "Data de Incidencia", "Data de incidencia", "Data Incidencia", "Data_Incidencia", "Incidência", "Incidencia"),
+    notaFiscalSaida: getVal("Nota Fiscal de Saída", "Nota Fiscal de Saida", "Nota fiscal de saída", "NF de Saída", "NF de Saida", "NF Saida", "NF_Saida", "Nota Fiscal Saida"),
+    dataUltimaAlteracao: getVal("Data Última Alteração", "Data Ultima Alteração", "Data Ultima Alteracao", "Data_Ultima_Alteracao", "Data Alteracao", "Ultima Alteracao", "Data Modificacao", "Data Modificação"),
+    ultimaInteracao: getVal("Última Interação", "Ultima Interacao", "Última Interaçao", "UltimaInteracao", "Última Alteração/Interação", "Ultima alteração", "Ultima Interação"),
+    valorUnitario: getVal("Valor Unitário", "Valor Unitario", "Valor_Unitario", "Valor Unit", "Preço Unitário", "Preço Unitario", "Val Unit"),
+    valorTotal: getVal("Valor total em estoque", "Valor Total em Estoque", "Valor Total", "Valor_Total", "Total em Estoque", "Valor Total Estoque", "Total"),
+    dataCompra: getVal("Data compra", "Data Compra", "Data_Compra", "Data da Compra", "Data de Compra", "Data_compra", "Data Nota"),
+    nfOrigem: getVal("NF Origem", "NF_Origem", "Nota Fiscal Origem", "NF Entrada", "Nota Fiscal de Origem", "NF_Entrada", "NF Compra"),
+    dataSolicitacao: getVal("Data Solicitação", "Data Solicitacao", "Data_Solicitacao", "Data Solicitacao Devolucao")
   };
 }
 
@@ -323,25 +373,66 @@ app.get("/api/sheet-data", async (req, res) => {
     }
 
     if (csvText && csvText.trim().length > 0 && !csvText.includes("<!DOCTYPE html>")) {
-      const parsed = Papa.parse(csvText, {
+      // Smart header detection: check if header row is not on row 1
+      let rawLines = csvText.split(/\r?\n/);
+      let headerRowIndex = 0;
+
+      for (let i = 0; i < Math.min(rawLines.length, 15); i++) {
+        const line = rawLines[i].toLowerCase();
+        if (
+          line.includes("status devolu") || 
+          line.includes("status_devolucao") || 
+          line.includes("id stock") || 
+          line.includes("id_stock") ||
+          line.includes("descricao") ||
+          line.includes("descrição")
+        ) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      const cleanCsvText = headerRowIndex > 0 ? rawLines.slice(headerRowIndex).join("\n") : csvText;
+
+      const parsed = Papa.parse(cleanCsvText, {
         header: true,
-        skipEmptyLines: true
+        skipEmptyLines: true,
+        transformHeader: (h) => h.trim()
       });
 
       if (parsed.data && parsed.data.length > 0) {
-        let rows = parsed.data.map(normalizeRow).filter(r => r.idStock || r.cliente || r.descricao);
+        let allParsedRows = parsed.data.map(normalizeRow).filter(r => r.idStock || r.cliente || r.descricao || r.statusDevolucao);
         
-        // Filter specifically by Status Devolução matching official Warranty Statuses (disregarding Localidade column)
-        const filteredByWarrantyStatus = rows.filter(r => isAllowedWarrantyStatus(r.statusDevolucao));
-        if (filteredByWarrantyStatus.length > 0) {
-          rows = filteredByWarrantyStatus;
-        }
+        // Filter specifically by Status Devolução matching official warranty statuses
+        const warrantyRows = allParsedRows.filter(r => isAllowedWarrantyStatus(r.statusDevolucao));
+        let rows = warrantyRows.length > 0 ? warrantyRows : allParsedRows;
 
         if (rows.length > 0) {
+          // Standardize statusDevolucao values
+          rows = rows.map(r => ({
+            ...r,
+            statusDevolucao: canonicalizeWarrantyStatus(r.statusDevolucao)
+          }));
+
+          const totalFound = rows.length;
+
+          // Extract unique localidades across all warranty rows
+          const uniqueLocalidades = Array.from(
+            new Set(rows.map(r => r.localidade?.trim()).filter(Boolean))
+          ).sort();
+
+          // Check if localidade filter was explicitly requested in query
+          const targetLocalidade = (req.query.localidade as string)?.trim().toLowerCase();
+          if (targetLocalidade && targetLocalidade !== 'all' && targetLocalidade !== 'todas') {
+            rows = rows.filter(r => r.localidade?.toLowerCase().includes(targetLocalidade));
+          }
+
           return res.json({
             success: true,
             source: "google_sheets",
-            totalRows: rows.length,
+            totalRows: totalFound,
+            filteredRowsCount: rows.length,
+            availableLocalidades: uniqueLocalidades,
             sheetId,
             gid,
             data: rows
@@ -373,6 +464,71 @@ app.get("/api/sheet-data", async (req, res) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
+});
+
+// Endpoint to receive item updates (Status Devolução, Obs Nota Fiscal, Observações Gerais)
+// and sync with Google Apps Script Webhook if configured
+app.post("/api/update-items", async (req, res) => {
+  try {
+    const { items: updatedItems, webhookUrl } = req.body;
+
+    if (!Array.isArray(updatedItems) || updatedItems.length === 0) {
+      return res.status(400).json({ success: false, message: "Nenhum item enviado para atualização." });
+    }
+
+    // Update in-memory sample dataset for items that exist in SAMPLE_DATA
+    for (const item of updatedItems) {
+      const idx = SAMPLE_DATA.findIndex(s => s.idStock && s.idStock === item.idStock);
+      if (idx !== -1) {
+        SAMPLE_DATA[idx] = {
+          ...SAMPLE_DATA[idx],
+          ...item
+        };
+      }
+    }
+
+    const targetWebhook = webhookUrl || process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+    let syncedToSheet = false;
+    let webhookMessage = "";
+
+    if (targetWebhook && targetWebhook.trim().startsWith("http")) {
+      try {
+        const webhookRes = await fetch(targetWebhook.trim(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedItems)
+        });
+
+        if (webhookRes.ok) {
+          syncedToSheet = true;
+          webhookMessage = "Alterações enviadas e gravadas com sucesso na sua Planilha Google!";
+        } else {
+          webhookMessage = `O Webhook da planilha respondeu com status ${webhookRes.status}. As alterações foram salvas localmente.`;
+        }
+      } catch (err: any) {
+        console.error("Erro ao enviar para Google Apps Script Webhook:", err.message);
+        webhookMessage = "Não foi possível conectar ao Webhook do Google Sheets. As alterações foram salvas no sistema.";
+      }
+    } else {
+      webhookMessage = "Alterações salvas localmente no sistema. Para gravar em tempo real na sua planilha Google, configure a URL do Webhook do Google Apps Script.";
+    }
+
+    return res.json({
+      success: true,
+      updatedCount: updatedItems.length,
+      syncedToSheet,
+      message: webhookMessage
+    });
+
+  } catch (error: any) {
+    console.error("Error in /api/update-items:", error);
+    return res.status(500).json({ success: false, message: "Erro interno ao atualizar itens." });
+  }
+});
+
+// API 404 handler - ensure /api/* requests never fall through to Vite SPA HTML
+app.use("/api/*", (req, res) => {
+  res.status(404).json({ success: false, message: "Rota da API não encontrada." });
 });
 
 async function startServer() {

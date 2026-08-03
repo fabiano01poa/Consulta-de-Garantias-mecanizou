@@ -31,6 +31,7 @@ import {
   Pie 
 } from 'recharts';
 import { StockItem } from '../types';
+import { isItemUrgent, OFFICIAL_WARRANTY_STATUSES } from '../utils/statusUtils';
 import { parseDateString, isDateInRange, calculateDaysSinceDeparture, calculateDaysInStock, getDaysFromDate } from '../utils/dateUtils';
 import { TimelineBar } from './TimelineBar';
 
@@ -113,21 +114,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ items, onSelectItem }) => 
     }));
   }, [statusSummary]);
 
-  // Unique list of statuses present in current date-filtered items
+  // Unique list of all statuses present in items + official warranty statuses
   const availableStatuses = useMemo(() => {
     const set = new Set<string>();
-    dateFilteredItems.forEach(i => {
-      if (i.statusDevolucao) set.add(i.statusDevolucao.trim());
+    OFFICIAL_WARRANTY_STATUSES.forEach(st => set.add(st));
+    items.forEach(i => {
+      if (i.statusDevolucao && i.statusDevolucao.trim()) {
+        set.add(i.statusDevolucao.trim());
+      }
     });
     return Array.from(set).sort();
-  }, [dateFilteredItems]);
+  }, [items]);
 
   // 3. Top Most Delayed Items (filtered by status & date range, ordered by oldest first)
   const top20Delayed = useMemo(() => {
     let list = dateFilteredItems;
 
-    // Filter by selected status if specific status selected
-    if (selectedStatusFilter !== 'all') {
+    // Filter by selected status or urgent
+    if (selectedStatusFilter === 'urgente') {
+      list = list.filter(item => isItemUrgent(item));
+    } else if (selectedStatusFilter !== 'all') {
       list = list.filter(item => (item.statusDevolucao?.trim() || '') === selectedStatusFilter);
     }
 
@@ -135,11 +141,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ items, onSelectItem }) => 
       .map(item => {
         const departureDays = getDaysFromDate(item.dataSaida);
         const stockDays = getDaysFromDate(item.dataRecebimento);
-        const primaryDays = dateField === 'dataSaida' ? (departureDays ?? stockDays ?? 0) : (stockDays ?? departureDays ?? 0);
+        const purchaseDays = getDaysFromDate(item.dataCompra);
+        const requestDays = getDaysFromDate(item.dataSolicitacao);
+
+        const primaryDays = Math.max(
+          departureDays ?? -999,
+          stockDays ?? -999,
+          purchaseDays ?? -999,
+          requestDays ?? -999
+        );
         
         return {
           item,
-          days: primaryDays,
+          days: primaryDays < -900 ? 0 : primaryDays,
           departureDays,
           stockDays,
           daysDepartureInfo: calculateDaysSinceDeparture(item.dataSaida),
@@ -147,7 +161,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ items, onSelectItem }) => 
         };
       })
       .sort((a, b) => b.days - a.days)
-      .slice(0, 25);
+      .slice(0, 50);
   }, [dateFilteredItems, selectedStatusFilter, dateField]);
 
   // 4. Ranking of Mecânicas / Clientes with most devoluções based on date filter
@@ -500,6 +514,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ items, onSelectItem }) => 
                   className="bg-slate-950 border border-slate-800 focus:border-indigo-500 text-xs text-slate-200 rounded-xl px-2.5 py-1.5 outline-none font-semibold"
                 >
                   <option value="all">Todos os Status ({dateFilteredItems.length})</option>
+                  <option value="urgente">🔥 Apenas Urgentes</option>
                   {availableStatuses.map((st, idx) => (
                     <option key={`opt-st-${st}-${idx}`} value={st}>{st}</option>
                   ))}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, User, Hash, X, Filter, Sparkles } from 'lucide-react';
+import { Search, User, Hash, X, Filter, Sparkles, Flame } from 'lucide-react';
 import { FilterState, StockItem } from '../types';
 
 interface FiltersProps {
@@ -24,27 +24,41 @@ export const Filters: React.FC<FiltersProps> = ({
   totalItems,
   onSelectItemById,
 }) => {
-  const isFiltered = filters.idStock !== '' || filters.cliente !== '' || filters.searchTerm !== '';
+  const isFiltered = filters.idStock !== '' || filters.cliente !== '' || filters.searchTerm !== '' || !!filters.apenasUrgentes;
 
   return (
     <div className="bg-slate-900/80 rounded-2xl p-4 sm:p-5 border border-slate-800/90 shadow-xl backdrop-blur-sm mb-6">
-      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80">
+      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80 flex-wrap gap-2">
         <div className="flex items-center space-x-2">
           <Filter className="w-4 h-4 text-indigo-400" />
           <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
             Filtros de Pesquisa
           </h2>
         </div>
-        <div className="flex items-center space-x-3 text-xs">
-          <span className="text-slate-400">
-            Exibindo <strong className="text-indigo-400 font-bold">{itemsCount}</strong> de {totalItems} registros
+        <div className="flex items-center space-x-2.5 text-xs">
+          {/* Urgent Toggle Button */}
+          <button
+            onClick={() => onFilterChange({ apenasUrgentes: !filters.apenasUrgentes })}
+            className={`inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-xl border transition-all ${
+              filters.apenasUrgentes
+                ? 'bg-red-950 text-red-300 border-red-700 shadow-lg shadow-red-950/50'
+                : 'bg-slate-800/80 text-slate-400 border-slate-700/60 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <Flame className={`w-3.5 h-3.5 mr-1.5 ${filters.apenasUrgentes ? 'text-red-400 fill-red-400' : 'text-slate-400'}`} />
+            {filters.apenasUrgentes ? 'Exibindo Apenas Urgentes' : 'Filtro: Urgentes'}
+          </button>
+
+          <span className="text-slate-400 hidden sm:inline">
+            Exibindo <strong className="text-indigo-400 font-bold">{itemsCount}</strong> de {totalItems}
           </span>
+
           {isFiltered && (
             <button
               onClick={onResetFilters}
-              className="inline-flex items-center text-xs font-medium text-slate-400 hover:text-indigo-400 transition-colors bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-700/60"
+              className="inline-flex items-center text-xs font-medium text-slate-400 hover:text-indigo-400 transition-colors bg-slate-800/80 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700/60"
             >
-              <X className="w-3 h-3 mr-1" /> Limpar Filtros
+              <X className="w-3 h-3 mr-1" /> Limpar
             </button>
           )}
         </div>

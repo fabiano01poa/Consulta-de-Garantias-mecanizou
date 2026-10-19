@@ -13,9 +13,11 @@ export interface StockItem {
   quantEstoque: string;
   fornecedor: string;
   novoFornecedorFilial: string;
+  fornecedorOriginal?: string;
   statusDevolucao: string;
   obsNotaFiscal: string;
   observacoesGerais: string;
+  obsStatusDevolucao?: string;
   localidade?: string;
   dataRecebimento?: string;
   dataSaida?: string;
@@ -31,6 +33,7 @@ export interface StockItem {
   dataUltimaAlteracao?: string;
   ultimaInteracao?: string;
   urgente?: boolean;
+  sheetRowNumber?: number;
   historicoAlteracoes?: HistoryEntry[];
 }
 

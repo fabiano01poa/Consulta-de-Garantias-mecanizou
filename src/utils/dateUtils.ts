@@ -112,7 +112,14 @@ export function calculateDaysInStock(dataRecebimentoStr?: string): DateDaysInfo 
   }
 }
 
+const itemTimestampCache = new WeakMap<StockItem, number>();
+
 export function getItemPrimaryTimestamp(item: StockItem): number {
+  if (!item) return 0;
+  const cached = itemTimestampCache.get(item);
+  if (cached !== undefined) return cached;
+
+  let val = 0;
   const dates = [
     item.dataRecebimento,
     item.dataSolicitacao,
@@ -123,14 +130,19 @@ export function getItemPrimaryTimestamp(item: StockItem): number {
   for (const dStr of dates) {
     if (dStr) {
       const parsed = parseDateString(dStr);
-      if (parsed) return parsed.getTime();
+      if (parsed) {
+        val = parsed.getTime();
+        break;
+      }
     }
   }
-  if (item.idStock) {
+  if (!val && item.idStock) {
     const num = parseInt(item.idStock.replace(/\D/g, ''), 10);
-    if (!isNaN(num)) return num;
+    if (!isNaN(num)) val = num;
   }
-  return 0;
+
+  itemTimestampCache.set(item, val);
+  return val;
 }
 
 export function calculateDaysSinceDeparture(dataSaidaStr?: string): DateDaysInfo {

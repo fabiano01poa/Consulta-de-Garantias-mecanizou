@@ -1,6 +1,6 @@
 {
-  "name": "Consulta de Estoque e Devoluções",
-  "description": "Sistema de consulta e filtragem de itens de estoque e devoluções integrado com Google Sheets e visualização detalhada em estilo card escuro.",
+  "name": "Consulta de Garantias",
+  "description": "Sistema de consulta, acompanhamento e gestão de itens em garantia integrado com Google Sheets.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -40,6 +40,9 @@ function doPost(e) {
     var obsNfCol = headers.findIndex(function(h) { return h.includes("obs nota fiscal") || h.includes("obs nf"); });
     var obsGeraisCol = headers.findIndex(function(h) { return h.includes("observac") && h.includes("gerai"); });
     var interacaoCol = headers.findIndex(function(h) { return h.includes("ultima interac") || h.includes("ultima_interacao") || h.includes("ultima interacao"); });
+    var nfOrigemCol = headers.findIndex(function(h) { return h.includes("nf origem") || h.includes("nf_origem") || h.includes("nota fiscal origem"); });
+    var nfSaidaCol = headers.findIndex(function(h) { return h.includes("nota fiscal de saida") || h.includes("nf saida") || h.includes("nf_saida"); });
+    var obsStatusCol = headers.findIndex(function(h) { return h.includes("observacao do status") || h.includes("obs status"); });
 
     if (idCol === -1) {
       return reply({ error: "Coluna ID STOCK não encontrada no cabeçalho" });
@@ -66,6 +69,15 @@ function doPost(e) {
           }
           if (interacaoCol !== -1 && item.ultimaInteracao !== undefined) {
             sheet.getRange(i + 1, interacaoCol + 1).setValue(item.ultimaInteracao);
+          }
+          if (nfOrigemCol !== -1 && item.nfOrigem !== undefined) {
+            sheet.getRange(i + 1, nfOrigemCol + 1).setValue(item.nfOrigem);
+          }
+          if (nfSaidaCol !== -1 && item.notaFiscalSaida !== undefined) {
+            sheet.getRange(i + 1, nfSaidaCol + 1).setValue(item.notaFiscalSaida);
+          }
+          if (obsStatusCol !== -1 && item.obsStatusDevolucao !== undefined) {
+            sheet.getRange(i + 1, obsStatusCol + 1).setValue(item.obsStatusDevolucao);
           }
           updatedCount++;
           break;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Layers, Search, BarChart2, Kanban, Handshake } from 'lucide-react';
+import { RefreshCw, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, Layers, Search, BarChart2, Kanban, Handshake, RotateCcw, BookOpen, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   onSync: () => void;
@@ -9,9 +9,11 @@ interface HeaderProps {
   totalItems: number;
   onOpenSheetModal: () => void;
   onOpenSyncModal?: () => void;
+  onOpenDocModal?: () => void;
   hasWebhookConfigured?: boolean;
-  activeView: 'consulta' | 'dash' | 'alertas' | 'negociar';
-  onViewChange: (view: 'consulta' | 'dash' | 'alertas' | 'negociar') => void;
+  activeView: 'consulta' | 'dash' | 'alertas' | 'garantias' | 'negociar';
+  onViewChange: (view: 'consulta' | 'dash' | 'alertas' | 'garantias') => void;
+  lastSyncedAt?: Date | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,9 +24,11 @@ export const Header: React.FC<HeaderProps> = ({
   totalItems,
   onOpenSheetModal,
   onOpenSyncModal,
+  onOpenDocModal,
   hasWebhookConfigured,
   activeView,
-  onViewChange
+  onViewChange,
+  lastSyncedAt
 }) => {
   return (
     <header className="bg-slate-900/90 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-md">
@@ -33,12 +37,12 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Title & Badge */}
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-xl text-white shadow-lg shadow-indigo-900/30 ring-1 ring-white/10">
-              <Layers className="w-6 h-6" />
+              <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                  Consulta de Estoque & Devoluções
+                  Consulta de Garantias
                 </h1>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 font-medium">
                   {totalItems} {totalItems === 1 ? 'item' : 'itens'}
@@ -46,8 +50,13 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
                 {source === 'google_sheets' ? (
-                  <span className="flex items-center text-emerald-400 font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Google Sheets Conectado
+                  <span className="flex items-center text-emerald-400 font-medium gap-1.5 flex-wrap">
+                    <span className="flex items-center">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Google Sheets Conectado
+                    </span>
+                    <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700/60 font-mono">
+                      Auto-sync 15 min {lastSyncedAt ? `(${lastSyncedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})` : ''}
+                    </span>
                   </span>
                 ) : source === 'custom_csv' ? (
                   <span className="flex items-center text-blue-400 font-medium">
@@ -62,11 +71,11 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Center Navigation Tabs: Consulta vs Dash vs Alertas */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner self-start md:self-auto">
+          {/* Center Navigation Tabs: Consulta vs Dash vs Alertas vs Garantias */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shadow-inner self-start md:self-auto flex-wrap gap-1">
             <button
               onClick={() => onViewChange('consulta')}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeView === 'consulta'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
                   : 'text-slate-400 hover:text-slate-200'
@@ -77,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => onViewChange('dash')}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeView === 'dash'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
                   : 'text-slate-400 hover:text-slate-200'
@@ -88,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => onViewChange('alertas')}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeView === 'alertas'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/50'
                   : 'text-slate-400 hover:text-slate-200'
@@ -98,15 +107,16 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Alertas Kanban</span>
             </button>
             <button
-              onClick={() => onViewChange('negociar')}
-              className={`flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeView === 'negociar'
+              onClick={() => onViewChange('garantias')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeView === 'garantias' || activeView === 'negociar'
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
+              title="Painel de itens com status de Garantia"
             >
-              <Handshake className="w-3.5 h-3.5" />
-              <span>Negociar</span>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Painel Garantias</span>
             </button>
           </div>
 
@@ -134,6 +144,17 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <CheckCircle2 className={`w-4 h-4 mr-1.5 ${hasWebhookConfigured ? 'text-emerald-400' : 'text-indigo-400'}`} />
                 <span>{hasWebhookConfigured ? 'Gravação Ativa' : 'Vincular Gravação'}</span>
+              </button>
+            )}
+
+            {onOpenDocModal && (
+              <button
+                onClick={onOpenDocModal}
+                className="inline-flex items-center px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 transition-all duration-150 active:scale-95 shadow-sm"
+                title="Abrir a documentação completa e baixar manual em PDF"
+              >
+                <BookOpen className="w-4 h-4 mr-1.5 text-indigo-400" />
+                <span>Documentação</span>
               </button>
             )}
 

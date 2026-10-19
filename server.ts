@@ -54,6 +54,7 @@ function isAllowedWarrantyStatus(statusStr?: string): boolean {
 // Sample fallback dataset matching the user's spreadsheet structure and screenshot visual requirements
 const SAMPLE_DATA = [
   {
+    protocolo: "PROT-88401",
     idStock: "STK-1001",
     cliente: "Brothers'car",
     descricao: "CILINDRO MESTRE FREIO C/RESERVATORIO",
@@ -232,6 +233,126 @@ const SAMPLE_DATA = [
     valorTotal: "R$ 3.700,00",
     dataCompra: "01/03/2026",
     nfOrigem: "NF-90182"
+  },
+  {
+    idStock: "STK-2001",
+    cliente: "Mecânica Rápida",
+    descricao: "FILTRO DE OLEO MOTOR Wega",
+    codigo: "WO-200",
+    marca: "WEGA",
+    quantEstoque: "20",
+    fornecedor: "Auto Peças Brasil Ltda",
+    novoFornecedorFilial: "Filial Sul - Curitiba",
+    statusDevolucao: "A negociar",
+    obsNotaFiscal: "Devolução em análise comercial.",
+    observacoesGerais: "Cliente solicitou devolução por divergência no pedido.",
+    localidade: "Estoque Geral",
+    dataRecebimento: "14/07/2026",
+    dataSaida: "22/07/2026",
+    valorUnitario: "R$ 35,00",
+    valorTotal: "R$ 700,00",
+    dataCompra: "10/06/2026",
+    nfOrigem: "NF-66102"
+  },
+  {
+    idStock: "STK-2002",
+    cliente: "Oficina do João",
+    descricao: "DISCO DE FREIO TRASEIRO",
+    codigo: "HF-32B",
+    marca: "HIPERFREIOS",
+    quantEstoque: "4",
+    fornecedor: "Distribuidora Velox",
+    novoFornecedorFilial: "Matriz - São Paulo",
+    statusDevolucao: "Aprovado",
+    obsNotaFiscal: "Aprovado para emissão de nota de crédito.",
+    observacoesGerais: "Devolução aceita conforme políticas da empresa.",
+    localidade: "Estoque Geral",
+    dataRecebimento: "18/07/2026",
+    dataSaida: "26/07/2026",
+    valorUnitario: "R$ 130,00",
+    valorTotal: "R$ 520,00",
+    dataCompra: "12/06/2026",
+    nfOrigem: "NF-77301"
+  },
+  {
+    idStock: "STK-2003",
+    cliente: "Auto Peças Lider",
+    descricao: "RADIADOR DE AGUA ALUMÍNIO",
+    codigo: "RD-9011",
+    marca: "VISCONDE",
+    quantEstoque: "2",
+    fornecedor: "Comercial Peças Express",
+    novoFornecedorFilial: "Filial SP - Campinas",
+    statusDevolucao: "Em negociação",
+    obsNotaFiscal: "Proposta de abatimento enviada ao fornecedor.",
+    observacoesGerais: "Aguardando retorno do compras sobre lote negociado.",
+    localidade: "Estoque Geral",
+    dataRecebimento: "08/07/2026",
+    dataSaida: "18/07/2026",
+    valorUnitario: "R$ 450,00",
+    valorTotal: "R$ 900,00",
+    dataCompra: "01/05/2026",
+    nfOrigem: "NF-88120"
+  },
+  {
+    idStock: "STK-2004",
+    cliente: "Car Service SP",
+    descricao: "SAPATA DE FREIO COM LONA",
+    codigo: "SP-402",
+    marca: "FRAS-LE",
+    quantEstoque: "10",
+    fornecedor: "Distribuidora Velox",
+    novoFornecedorFilial: "Filial RJ - Duque de Caxias",
+    statusDevolucao: "Emitir NF",
+    obsNotaFiscal: "Solicitado emissão de NF de devolução.",
+    observacoesGerais: "Autorização de devolução nº 4410 gerada.",
+    localidade: "Estoque Geral",
+    dataRecebimento: "02/07/2026",
+    dataSaida: "12/07/2026",
+    valorUnitario: "R$ 75,00",
+    valorTotal: "R$ 750,00",
+    dataCompra: "15/05/2026",
+    nfOrigem: "NF-99201"
+  },
+  {
+    idStock: "STK-2005",
+    cliente: "Retífica Central",
+    descricao: "CABECOTE MOTOR COMPLETE 1.6 16V",
+    codigo: "CB-1600",
+    marca: "TAKAO",
+    quantEstoque: "1",
+    fornecedor: "Auto Peças Brasil Ltda",
+    novoFornecedorFilial: "Filial MG - Belo Horizonte",
+    statusDevolucao: "Passivo em analise",
+    obsNotaFiscal: "Passivo em análise técnica pela gerência.",
+    observacoesGerais: "Análise técnica interna de viabilidade financeira.",
+    localidade: "Estoque Geral",
+    dataRecebimento: "22/06/2026",
+    dataSaida: "05/07/2026",
+    valorUnitario: "R$ 2.400,00",
+    valorTotal: "R$ 2.400,00",
+    dataCompra: "10/04/2026",
+    nfOrigem: "NF-11204"
+  },
+  {
+    idStock: "STK-2006",
+    cliente: "Garagem 500",
+    descricao: "BATERIA AUTOMOTIVA 60AH",
+    codigo: "BT-60A",
+    marca: "HELIAR",
+    quantEstoque: "3",
+    fornecedor: "Bosch do Brasil Ltda",
+    novoFornecedorFilial: "Filial SP - Campinas",
+    statusDevolucao: "Recusado",
+    obsNotaFiscal: "Devolução recusada por avaria mecânica no casco.",
+    observacoesGerais: "Item com avaria externa decorrente de mau uso.",
+    localidade: "Estoque Geral",
+    dataRecebimento: "05/06/2026",
+    dataSaida: "15/06/2026",
+    valorUnitario: "R$ 380,00",
+    valorTotal: "R$ 1.140,00",
+    dataCompra: "01/03/2026",
+    nfOrigem: "NF-33019"
   }
 ];
 
@@ -252,10 +373,8 @@ function extractSheetIdAndGid(urlStr: string) {
   return { sheetId, gid };
 }
 
-function normalizeRow(row: any) {
-  const keys = Object.keys(row);
-
-  const getVal = (...names: string[]) => {
+function buildHeaderKeyMap(keys: string[]) {
+  const findKey = (...names: string[]) => {
     // 1st PASS: Exact match ignoring case and accents
     for (const name of names) {
       const cleanN = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -263,12 +382,10 @@ function normalizeRow(row: any) {
         const cleanK = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         return cleanK === cleanN;
       });
-      if (exactKey && row[exactKey] !== undefined && row[exactKey] !== null && String(row[exactKey]).trim() !== '') {
-        return String(row[exactKey]).trim();
-      }
+      if (exactKey) return exactKey;
     }
 
-    // 2nd PASS: Column header contains the target candidate name (e.g., column 'Status Devolução do Item' contains 'status devolucao')
+    // 2nd PASS: Column header contains candidate name
     for (const name of names) {
       const cleanN = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       if (cleanN.length < 3) continue;
@@ -276,104 +393,146 @@ function normalizeRow(row: any) {
         const cleanK = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         return cleanK.includes(cleanN);
       });
-      if (containsKey && row[containsKey] !== undefined && row[containsKey] !== null && String(row[containsKey]).trim() !== '') {
-        return String(row[containsKey]).trim();
-      }
+      if (containsKey) return containsKey;
     }
 
-    // 3rd PASS: Target name contains column header (only for specific column headers >= 5 chars)
+    // 3rd PASS: Target name contains column header
     for (const name of names) {
       const cleanN = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       const fallbackKey = keys.find(k => {
         const cleanK = k.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         return cleanK.length >= 5 && cleanN.includes(cleanK);
       });
-      if (fallbackKey && row[fallbackKey] !== undefined && row[fallbackKey] !== null && String(row[fallbackKey]).trim() !== '') {
-        return String(row[fallbackKey]).trim();
-      }
+      if (fallbackKey) return fallbackKey;
     }
 
-    return "";
+    return null;
   };
 
   return {
-    idStock: getVal("ID STOCK", "ID_STOCK", "IDSTOCK", "STOCK", "ID"),
-    cliente: getVal("Cliente", "CLIENTE", "Nome Cliente", "Razão Social", "Oficina", "Mecanica", "Mecânica"),
-    descricao: getVal("Descrição", "DESCRICAO", "Descrição do Item", "Nome da Peça", "Item", "Desc", "Produto"),
-    codigo: getVal("Código", "CODIGO", "Código da Peça", "Cod", "Ref", "Codigo Fabrica"),
-    marca: getVal("Marca", "MARCA", "Fabricante"),
-    quantEstoque: getVal("Quant. em Estoque", "Quant em Estoque", "Quantidade em Estoque", "Quant", "Estoque", "Qtd"),
-    fornecedor: getVal("Fornecedor", "FORNECEDOR", "Forn"),
-    novoFornecedorFilial: getVal("Novo Fornecedor/Filial", "Novo Fornecedor", "Filial", "Novo Fornecedor / Filial"),
-    statusDevolucao: getVal("Status Devolução", "Status Devolucao", "Status_Devolucao", "Status da Devolução", "Status de Devolução", "Status Devolucao Peça", "Status Devolucao Item", "Status Garantia", "Status Processo", "Status"),
-    obsNotaFiscal: getVal("Obs Nota Fiscal", "Obs NF", "Observação Nota Fiscal", "Observação NF", "Nota Fiscal", "Obs_NF"),
-    observacoesGerais: getVal("Observações gerais do item", "Observações Gerais", "Obs Gerais", "Observação", "Obs", "Motivo", "Observacoes"),
-    localidade: getVal("Localidade", "LOCALIDADE", "Localizacao", "Localização", "Local"),
-    dataRecebimento: getVal("Data_Recebimento", "Data Recebimento", "DataRecebimento", "Data de Recebimento", "Data Rec", "Recebimento"),
-    dataSaida: getVal("Data_saida", "Data Saida", "Data_Saida", "Data de Saida", "Data Env", "Data Envio", "Envio"),
-    dataIncidencia: getVal("Data de incidência", "Data de Incidencia", "Data de incidencia", "Data Incidencia", "Data_Incidencia", "Incidência", "Incidencia"),
-    notaFiscalSaida: getVal("Nota Fiscal de Saída", "Nota Fiscal de Saida", "Nota fiscal de saída", "NF de Saída", "NF de Saida", "NF Saida", "NF_Saida", "Nota Fiscal Saida"),
-    dataUltimaAlteracao: getVal("Data Última Alteração", "Data Ultima Alteração", "Data Ultima Alteracao", "Data_Ultima_Alteracao", "Data Alteracao", "Ultima Alteracao", "Data Modificacao", "Data Modificação"),
-    ultimaInteracao: getVal("Última Interação", "Ultima Interacao", "Última Interaçao", "UltimaInteracao", "Última Alteração/Interação", "Ultima alteração", "Ultima Interação"),
-    valorUnitario: getVal("Valor Unitário", "Valor Unitario", "Valor_Unitario", "Valor Unit", "Preço Unitário", "Preço Unitario", "Val Unit"),
-    valorTotal: getVal("Valor total em estoque", "Valor Total em Estoque", "Valor Total", "Valor_Total", "Total em Estoque", "Valor Total Estoque", "Total"),
-    dataCompra: getVal("Data compra", "Data Compra", "Data_Compra", "Data da Compra", "Data de Compra", "Data_compra", "Data Nota"),
-    nfOrigem: getVal("NF Origem", "NF_Origem", "Nota Fiscal Origem", "NF Entrada", "Nota Fiscal de Origem", "NF_Entrada", "NF Compra"),
-    dataSolicitacao: getVal("Data Solicitação", "Data Solicitacao", "Data_Solicitacao", "Data Solicitacao Devolucao")
+    protocolo: findKey("Protocolo", "PROTOCOLO", "Num Protocolo", "Número Protocolo", "Nº Protocolo", "Prot", "COD PROTOCOLO"),
+    idStock: findKey("ID STOCK", "ID_STOCK", "IDSTOCK", "STOCK", "ID"),
+    cliente: findKey("Cliente", "CLIENTE", "Nome Cliente", "Razão Social", "Oficina", "Mecanica", "Mecânica"),
+    descricao: findKey("Descrição", "DESCRICAO", "Descrição do Item", "Nome da Peça", "Item", "Desc", "Produto"),
+    codigo: findKey("Código", "CODIGO", "Código da Peça", "Cod", "Ref", "Codigo Fabrica"),
+    marca: findKey("Marca", "MARCA", "Fabricante"),
+    quantEstoque: findKey("Quant. em Estoque", "Quant em Estoque", "Quantidade em Estoque", "Quant", "Estoque", "Qtd"),
+    fornecedor: findKey("Fornecedor", "FORNECEDOR", "Forn"),
+    novoFornecedorFilial: findKey("Novo Fornecedor/Filial", "Novo Fornecedor", "Filial", "Novo Fornecedor / Filial"),
+    fornecedorOriginal: findKey("Fornecedor Original", "FORNECEDOR ORIGINAL", "Forn Original", "Fornecedor_Original", "Fornecedor Original do Item"),
+    statusDevolucao: findKey("Status Devolução", "Status Devolucao", "Status_Devolucao", "Status da Devolução", "Status de Devolução", "Status Devolucao Peça", "Status Devolucao Item", "Status Garantia", "Status Processo", "Status"),
+    obsNotaFiscal: findKey("Obs Nota Fiscal", "Obs NF", "Observação Nota Fiscal", "Observação NF", "Nota Fiscal", "Obs_NF"),
+    observacoesGerais: findKey("Observações gerais do item", "Observações Gerais", "Obs Gerais", "Observação", "Obs", "Observacoes"),
+    motivo: findKey("Motivo de garantia", "Motivo de Garantia", "Motivo da garantia", "Motivo da Garantia", "Motivo Garantia", "Motivo", "Motivo Troca", "Defeito", "Problema Relatado", "Causa", "Motivo do retorno"),
+    obsStatusDevolucao: findKey("Observação do status de devolução", "Observacao do status de devolucao", "Observação status de devolução", "Observação do status", "Obs do status de devolução", "Obs Status Devolução", "Obs status devolucao", "Obs Status"),
+    localidade: findKey("Localidade", "LOCALIDADE", "Localizacao", "Localização", "Local"),
+    dataRecebimento: findKey("Data_Recebimento", "Data Recebimento", "DataRecebimento", "Data de Recebimento", "Data Rec", "Recebimento"),
+    dataSaida: findKey("Data_saida", "Data Saida", "Data_Saida", "Data de Saida", "Data Env", "Data Envio", "Envio"),
+    dataIncidencia: findKey("Data de incidência", "Data de Incidencia", "Data de incidencia", "Data Incidencia", "Data_Incidencia", "Incidência", "Incidencia"),
+    notaFiscalSaida: findKey("Nota Fiscal de Saída", "Nota Fiscal de Saida", "Nota fiscal de saída", "NF de Saída", "NF de Saida", "NF Saida", "NF_Saida", "Nota Fiscal Saida"),
+    dataUltimaAlteracao: findKey("Data Última Alteração", "Data Ultima Alteração", "Data Ultima Alteracao", "Data_Ultima_Alteracao", "Data Alteracao", "Ultima Alteracao", "Data Modificacao", "Data Modificação"),
+    ultimaInteracao: findKey("Última Interação", "Ultima Interacao", "Última Interaçao", "UltimaInteracao", "Última Alteração/Interação", "Ultima alteração", "Ultima Interação"),
+    valorUnitario: findKey("Valor Unitário", "Valor Unitario", "Valor_Unitario", "Valor Unit", "Preço Unitário", "Preço Unitario", "Val Unit"),
+    valorTotal: findKey("Valor total em estoque", "Valor Total em Estoque", "Valor Total", "Valor_Total", "Total em Estoque", "Valor Total Estoque", "Total"),
+    dataCompra: findKey("Data compra", "Data Compra", "Data_Compra", "Data da Compra", "Data de Compra", "Data_compra", "Data Nota"),
+    nfOrigem: findKey("NF Origem", "NF_Origem", "Nota Fiscal Origem", "NF Entrada", "Nota Fiscal de Origem", "NF_Entrada", "NF Compra"),
+    dataSolicitacao: findKey("Data Solicitação", "Data Solicitacao", "Data_Solicitacao", "Data Solicitacao Devolucao"),
+    urgenteKey: findKey("Urgente", "URGENTE", "Prioridade", "Urgência")
   };
 }
 
-// Endpoint to fetch Google Sheet CSV data
-app.get("/api/sheet-data", async (req, res) => {
-  const customUrl = req.query.url as string;
-  let sheetId = DEFAULT_SHEET_ID;
-  let gid = DEFAULT_GID;
-
-  if (customUrl) {
-    const extracted = extractSheetIdAndGid(customUrl);
-    sheetId = extracted.sheetId;
-    gid = extracted.gid;
+function normalizeRow(row: any, headerMap?: ReturnType<typeof buildHeaderKeyMap>) {
+  if (!headerMap) {
+    const keys = Object.keys(row);
+    headerMap = buildHeaderKeyMap(keys);
   }
 
-  const gvizUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-  const pubUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?output=csv&gid=${gid}`;
-  const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  const getVal = (keyName: keyof typeof headerMap) => {
+    const k = headerMap[keyName];
+    if (k && row[k] !== undefined && row[k] !== null) {
+      return String(row[k]).trim();
+    }
+    return "";
+  };
 
-  console.log(`Attempting to fetch Google Sheet ID: ${sheetId}, GID: ${gid}`);
+  const statusDev = getVal("statusDevolucao");
+  const urgVal = getVal("urgenteKey");
 
-  try {
-    let csvText = "";
-    // Primary attempt: gviz API (does not require export permissions for public sheets)
-    let response = await fetch(gvizUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  return {
+    protocolo: getVal("protocolo"),
+    idStock: getVal("idStock"),
+    cliente: getVal("cliente"),
+    descricao: getVal("descricao"),
+    codigo: getVal("codigo"),
+    marca: getVal("marca"),
+    quantEstoque: getVal("quantEstoque"),
+    fornecedor: getVal("fornecedor"),
+    novoFornecedorFilial: getVal("novoFornecedorFilial"),
+    fornecedorOriginal: getVal("fornecedorOriginal"),
+    statusDevolucao: statusDev,
+    obsNotaFiscal: getVal("obsNotaFiscal"),
+    observacoesGerais: getVal("observacoesGerais"),
+    motivo: getVal("motivo") || getVal("observacoesGerais"),
+    obsStatusDevolucao: getVal("obsStatusDevolucao"),
+    localidade: getVal("localidade"),
+    dataRecebimento: getVal("dataRecebimento"),
+    dataSaida: getVal("dataSaida"),
+    dataIncidencia: getVal("dataIncidencia"),
+    notaFiscalSaida: getVal("notaFiscalSaida"),
+    dataUltimaAlteracao: getVal("dataUltimaAlteracao"),
+    ultimaInteracao: getVal("ultimaInteracao"),
+    valorUnitario: getVal("valorUnitario"),
+    valorTotal: getVal("valorTotal"),
+    dataCompra: getVal("dataCompra"),
+    nfOrigem: getVal("nfOrigem"),
+    dataSolicitacao: getVal("dataSolicitacao"),
+    urgente: Boolean(
+      urgVal.toLowerCase().includes("sim") ||
+      urgVal.toLowerCase().includes("urg") ||
+      statusDev.toLowerCase().includes("urgente")
+    )
+  };
+}
+
+// Cache interface and storage to prevent Google Sheets 429 (Rate Exceeded) errors
+interface SheetCacheEntry {
+  totalFound: number;
+  availableLocalidades: string[];
+  allRows: any[];
+  timestamp: number;
+}
+const sheetCache = new Map<string, SheetCacheEntry>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
+const isFetchingMap = new Map<string, boolean>();
+
+async function fetchAndParseGoogleSheet(sheetId: string, gid: string): Promise<SheetCacheEntry | null> {
+  const timestamp = Date.now();
+  const gvizUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}&_t=${timestamp}`;
+  const pubUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?output=csv&gid=${gid}&_t=${timestamp}`;
+  const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&_t=${timestamp}`;
+
+  console.log(`[Google Sheets Fetch] Fetching ID: ${sheetId}, GID: ${gid}`);
+
+  const urlsToTry = [gvizUrl, pubUrl, exportUrl];
+
+  for (const url of urlsToTry) {
+    try {
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+        signal: AbortSignal.timeout(25000)
+      });
+
+      if (!response.ok) {
+        console.warn(`[Google Sheets Fetch] ${url} returned status ${response.status}`);
+        continue;
       }
-    });
 
-    if (!response.ok) {
-      // Secondary attempt: pubUrl
-      response = await fetch(pubUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
-      });
-    }
+      const csvText = await response.text();
+      if (!csvText || csvText.trim().length === 0 || csvText.includes("<!DOCTYPE html>")) {
+        console.warn(`[Google Sheets Fetch] ${url} returned HTML or empty content`);
+        continue;
+      }
 
-    if (!response.ok) {
-      // Tertiary attempt: exportUrl
-      response = await fetch(exportUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
-      });
-    }
-
-    if (response.ok) {
-      csvText = await response.text();
-    }
-
-    if (csvText && csvText.trim().length > 0 && !csvText.includes("<!DOCTYPE html>")) {
-      // Smart header detection: check if header row is not on row 1
       let rawLines = csvText.split(/\r?\n/);
       let headerRowIndex = 0;
 
@@ -401,65 +560,163 @@ app.get("/api/sheet-data", async (req, res) => {
       });
 
       if (parsed.data && parsed.data.length > 0) {
-        let allParsedRows = parsed.data.map(normalizeRow).filter(r => r.idStock || r.cliente || r.descricao || r.statusDevolucao);
-        
-        // Filter specifically by Status Devolução matching official warranty statuses
-        const warrantyRows = allParsedRows.filter(r => isAllowedWarrantyStatus(r.statusDevolucao));
-        let rows = warrantyRows.length > 0 ? warrantyRows : allParsedRows;
+        const firstRowKeys = parsed.meta?.fields || Object.keys(parsed.data[0] || {});
+        const headerMap = buildHeaderKeyMap(firstRowKeys);
 
-        if (rows.length > 0) {
-          // Standardize statusDevolucao values
-          rows = rows.map(r => ({
+        let allParsedRows = parsed.data.map((rawRow: any, idx: number) => {
+          const norm = normalizeRow(rawRow, headerMap);
+          return {
+            ...norm,
+            sheetRowNumber: headerRowIndex + 2 + idx
+          };
+        }).filter(r => r.idStock || r.cliente || r.descricao || r.statusDevolucao);
+
+        if (allParsedRows.length > 0) {
+          allParsedRows = allParsedRows.map(r => ({
             ...r,
             statusDevolucao: canonicalizeWarrantyStatus(r.statusDevolucao)
           }));
 
-          const totalFound = rows.length;
-
-          // Extract unique localidades across all warranty rows
+          const totalFound = allParsedRows.length;
           const uniqueLocalidades = Array.from(
-            new Set(rows.map(r => r.localidade?.trim()).filter(Boolean))
+            new Set(allParsedRows.map(r => r.localidade?.trim()).filter(Boolean))
           ).sort();
 
-          // Check if localidade filter was explicitly requested in query
-          const targetLocalidade = (req.query.localidade as string)?.trim().toLowerCase();
-          if (targetLocalidade && targetLocalidade !== 'all' && targetLocalidade !== 'todas') {
-            rows = rows.filter(r => r.localidade?.toLowerCase().includes(targetLocalidade));
-          }
-
-          return res.json({
-            success: true,
-            source: "google_sheets",
-            totalRows: totalFound,
-            filteredRowsCount: rows.length,
+          const cacheEntry: SheetCacheEntry = {
+            totalFound,
             availableLocalidades: uniqueLocalidades,
-            sheetId,
-            gid,
-            data: rows
-          });
+            allRows: allParsedRows,
+            timestamp: Date.now()
+          };
+
+          const cacheKey = `${sheetId}_${gid}`;
+          sheetCache.set(cacheKey, cacheEntry);
+          console.log(`[Google Sheets Cache] Successfully updated cache for ${cacheKey} (${totalFound} rows from ${url})`);
+          return cacheEntry;
         }
       }
+    } catch (fetchErr: any) {
+      console.warn(`[Google Sheets Fetch] Error fetching ${url}: ${fetchErr.message}`);
     }
-
-    console.warn("Could not parse rows from fetched CSV or sheet is private. Returning fallback data.");
-    return res.json({
-      success: true,
-      source: "fallback_sample",
-      message: "Planilha online requer permissão ou está indisponível. Exibindo dados de demonstração predefinidos.",
-      totalRows: SAMPLE_DATA.length,
-      data: SAMPLE_DATA
-    });
-
-  } catch (error: any) {
-    console.error("Error fetching sheet:", error.message);
-    return res.json({
-      success: true,
-      source: "fallback_sample",
-      message: "Não foi possível conectar à planilha online. Exibindo dados de amostra.",
-      totalRows: SAMPLE_DATA.length,
-      data: SAMPLE_DATA
-    });
   }
+
+  return null;
+}
+
+// Endpoint to fetch Google Sheet CSV data
+app.get("/api/sheet-data", async (req, res) => {
+  const customUrl = req.query.url as string;
+  const forceRefresh = req.query.force === 'true' || req.query.noCache === 'true';
+  let sheetId = DEFAULT_SHEET_ID;
+  let gid = DEFAULT_GID;
+
+  if (customUrl) {
+    const extracted = extractSheetIdAndGid(customUrl);
+    sheetId = extracted.sheetId;
+    gid = extracted.gid;
+  }
+
+  const cacheKey = `${sheetId}_${gid}`;
+  const existingCache = sheetCache.get(cacheKey);
+
+  if (forceRefresh) {
+    sheetCache.delete(cacheKey);
+  }
+
+  const targetLocalidade = (req.query.localidade as string)?.trim().toLowerCase();
+  const cachedEntry = sheetCache.get(cacheKey);
+
+  // Helper to construct response from row dataset
+  const buildSuccessResponse = (allRows: any[], totalFound: number, uniqueLocalidades: string[], isCached: boolean, noticeMsg?: string) => {
+    let filtered = allRows;
+    if (targetLocalidade && targetLocalidade !== 'all' && targetLocalidade !== 'todas') {
+      filtered = allRows.filter(r => r.localidade?.toLowerCase().includes(targetLocalidade));
+    }
+    return res.json({
+      success: true,
+      source: isCached ? "google_sheets_cached" : "google_sheets",
+      message: noticeMsg,
+      totalRows: totalFound,
+      filteredRowsCount: filtered.length,
+      availableLocalidades: uniqueLocalidades,
+      sheetId,
+      gid,
+      data: filtered
+    });
+  };
+
+  // If force refreshing, try fetching fresh data. If it times out or fails, fallback to existing cache if available.
+  if (forceRefresh) {
+    isFetchingMap.set(cacheKey, true);
+    const freshCache = await fetchAndParseGoogleSheet(sheetId, gid).finally(() => {
+      isFetchingMap.set(cacheKey, false);
+    });
+
+    if (freshCache) {
+      return buildSuccessResponse(freshCache.allRows, freshCache.totalFound, freshCache.availableLocalidades, false);
+    } else if (existingCache) {
+      console.warn("Force refresh failed or timed out. Falling back to existing cached entry.");
+      return buildSuccessResponse(
+        existingCache.allRows,
+        existingCache.totalFound,
+        existingCache.availableLocalidades,
+        true,
+        "Aviso: Não foi possível atualizar do Google Sheets no momento (tempo limite esgotado). Exibindo dados em cache."
+      );
+    }
+  }
+
+  // 1. If cache is fresh (< 5 mins), return immediately
+  if (cachedEntry && (Date.now() - cachedEntry.timestamp) < CACHE_TTL_MS) {
+    return buildSuccessResponse(cachedEntry.allRows, cachedEntry.totalFound, cachedEntry.availableLocalidades, true);
+  }
+
+  // 2. If stale cache exists, return stale cache immediately and trigger async background refresh
+  if (cachedEntry) {
+    if (!isFetchingMap.get(cacheKey)) {
+      isFetchingMap.set(cacheKey, true);
+      fetchAndParseGoogleSheet(sheetId, gid).finally(() => {
+        isFetchingMap.set(cacheKey, false);
+      });
+    }
+    return buildSuccessResponse(cachedEntry.allRows, cachedEntry.totalFound, cachedEntry.availableLocalidades, true);
+  }
+
+  // 3. Cold start: No cache available yet. Perform fetch synchronously.
+  isFetchingMap.set(cacheKey, true);
+  const freshCache = await fetchAndParseGoogleSheet(sheetId, gid).finally(() => {
+    isFetchingMap.set(cacheKey, false);
+  });
+
+  if (freshCache) {
+    return buildSuccessResponse(freshCache.allRows, freshCache.totalFound, freshCache.availableLocalidades, false);
+  }
+
+  if (existingCache) {
+    console.warn("Fetch failed, falling back to existing cache.");
+    return buildSuccessResponse(
+      existingCache.allRows,
+      existingCache.totalFound,
+      existingCache.availableLocalidades,
+      true,
+      "Aviso: Conexão com Google Sheets indisponível no momento. Exibindo dados salvos em cache."
+    );
+  }
+
+  // Fallback to sample data if cold start fetch fails
+  const sampleDataWithRows = SAMPLE_DATA.map((item: any, idx) => ({
+    ...item,
+    sheetRowNumber: item.sheetRowNumber || (idx + 2)
+  }));
+
+  console.warn("Could not parse rows from fetched CSV or sheet is private. Returning fallback data.");
+  return res.json({
+    success: true,
+    source: "fallback_sample",
+    message: "Planilha online requer permissão ou está indisponível. Exibindo dados de demonstração predefinidos.",
+    totalRows: sampleDataWithRows.length,
+    data: sampleDataWithRows
+  });
 });
 
 app.get("/api/health", (req, res) => {
@@ -476,7 +733,7 @@ app.post("/api/update-items", async (req, res) => {
       return res.status(400).json({ success: false, message: "Nenhum item enviado para atualização." });
     }
 
-    // Update in-memory sample dataset for items that exist in SAMPLE_DATA
+    // Update in-memory sample dataset and cache entries for items
     for (const item of updatedItems) {
       const idx = SAMPLE_DATA.findIndex(s => s.idStock && s.idStock === item.idStock);
       if (idx !== -1) {
@@ -484,6 +741,15 @@ app.post("/api/update-items", async (req, res) => {
           ...SAMPLE_DATA[idx],
           ...item
         };
+      }
+      for (const [cacheKey, entry] of sheetCache.entries()) {
+        const rowIdx = entry.allRows.findIndex(r => r.idStock && r.idStock === item.idStock);
+        if (rowIdx !== -1) {
+          entry.allRows[rowIdx] = {
+            ...entry.allRows[rowIdx],
+            ...item
+          };
+        }
       }
     }
 
@@ -496,14 +762,25 @@ app.post("/api/update-items", async (req, res) => {
         const webhookRes = await fetch(targetWebhook.trim(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedItems)
+          body: JSON.stringify(updatedItems),
+          redirect: 'follow'
         });
 
-        if (webhookRes.ok) {
+        const respText = await webhookRes.text();
+        let respJson: any = {};
+        const isHtml = respText.trim().startsWith("<!DOCTYPE html>") || respText.includes("<html");
+        try {
+          respJson = JSON.parse(respText);
+        } catch {
+          respJson = { raw: respText };
+        }
+
+        if (!isHtml && (respJson.success || respJson.updatedCount !== undefined)) {
           syncedToSheet = true;
           webhookMessage = "Alterações enviadas e gravadas com sucesso na sua Planilha Google!";
         } else {
-          webhookMessage = `O Webhook da planilha respondeu com status ${webhookRes.status}. As alterações foram salvas localmente.`;
+          const reason = isHtml ? "O Google Apps Script retornou uma página HTML/Login (verifique se 'Quem tem acesso' está como 'Qualquer pessoa')." : (respJson.error || respJson.raw || `Status ${webhookRes.status}`);
+          webhookMessage = `Falha ao gravar na planilha: ${reason}`;
         }
       } catch (err: any) {
         console.error("Erro ao enviar para Google Apps Script Webhook:", err.message);
@@ -552,3 +829,5 @@ async function startServer() {
 }
 
 startServer();
+
+export default app;

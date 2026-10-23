@@ -92,6 +92,12 @@ export default function App() {
     });
   };
 
+  // Marca <html> com o tema do app para as variantes dark: do Tailwind (modais de etiqueta)
+  useEffect(() => {
+    document.documentElement.classList.remove('dark', 'light');
+    document.documentElement.classList.add(theme);
+  }, [theme]);
+
   // Sidebar responsive states
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);

@@ -6,6 +6,8 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    // Permite um cache separado (ex.: ambiente de teste que compartilha node_modules)
+    cacheDir: process.env.VITE_CACHE_DIR || 'node_modules/.vite',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

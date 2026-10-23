@@ -10,6 +10,10 @@ interface ResultsTableProps {
   selectedItem: StockItem | null;
   onSelectItem: (item: StockItem) => void;
   theme?: 'dark' | 'light';
+  // Seleção para impressão de etiquetas Brother
+  selectedLabelIds?: Set<string>;
+  onToggleLabelSelect?: (idStock: string) => void;
+  onToggleSelectAllPage?: (ids: string[], select: boolean) => void;
 }
 
 export const ItemList: React.FC<ResultsTableProps> = ({
@@ -17,6 +21,9 @@ export const ItemList: React.FC<ResultsTableProps> = ({
   selectedItem,
   onSelectItem,
   theme = 'dark',
+  selectedLabelIds = new Set(),
+  onToggleLabelSelect,
+  onToggleSelectAllPage,
 }) => {
   const isDark = theme === 'dark';
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -129,6 +136,16 @@ export const ItemList: React.FC<ResultsTableProps> = ({
             <tr className={`border-b text-[11px] font-bold uppercase tracking-wider ${
               isDark ? 'bg-slate-950/60 border-slate-800 text-slate-400' : 'bg-slate-100/70 border-slate-200 text-slate-600'
             }`}>
+              <th className="py-3.5 px-3 text-center w-10">
+                <input
+                  type="checkbox"
+                  checked={currentItems.length > 0 && currentItems.every(i => selectedLabelIds.has(i.idStock))}
+                  onChange={(e) => onToggleSelectAllPage?.(currentItems.map(i => i.idStock).filter(Boolean), e.target.checked)}
+                  className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                  title="Selecionar página atual para etiquetas"
+                  aria-label="Selecionar página atual para etiquetas"
+                />
+              </th>
               <th className="py-3.5 px-4">Protocolo</th>
               <th className="py-3.5 px-4">ID STOCK</th>
               <th className="py-3.5 px-4">Cliente</th>
@@ -157,6 +174,17 @@ export const ItemList: React.FC<ResultsTableProps> = ({
                       : isDark ? 'hover:bg-slate-800/60' : 'hover:bg-slate-50'
                   }`}
                 >
+                  <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedLabelIds.has(item.idStock)}
+                      disabled={!item.idStock}
+                      onChange={() => onToggleLabelSelect?.(item.idStock)}
+                      className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer disabled:opacity-30"
+                      aria-label={`Selecionar ${item.idStock || 'item'} para etiqueta`}
+                    />
+                  </td>
+
                   {/* PROTOCOLO */}
                   <td className={`py-3.5 px-4 font-mono font-bold whitespace-nowrap ${
                     isDark ? 'text-amber-400' : 'text-amber-700'

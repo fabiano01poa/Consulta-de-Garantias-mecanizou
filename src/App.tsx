@@ -7,6 +7,8 @@ import { ItemList } from './components/ItemList';
 import { SheetModal } from './components/SheetModal';
 import { GoogleSyncModal } from './components/GoogleSyncModal';
 import { DocumentationModal } from './components/DocumentationModal';
+import { BrotherLabelModal } from './components/BrotherLabelModal';
+import { SupplierLabelModal } from './components/SupplierLabelModal';
 import { Dashboard } from './components/Dashboard';
 import { KanbanAlerts } from './components/KanbanAlerts';
 import { NegociarView } from './components/NegociarView';
@@ -14,12 +16,40 @@ import { StockItem, FilterState } from './types';
 import { isAllowedWarrantyStatus, isWarrantyItem, isDevolucaoItem, isItemUrgent } from './utils/statusUtils';
 import { getItemPrimaryTimestamp } from './utils/dateUtils';
 import { fetchSheetDirectlyFromClient } from './utils/clientSheetFetcher';
-import { AlertTriangle, Sparkles, RefreshCw, Layers, Menu, ShieldCheck, Moon, Sun } from 'lucide-react';
+import { AlertTriangle, Sparkles, RefreshCw, Layers, Menu, ShieldCheck, Moon, Sun, Printer, Truck } from 'lucide-react';
 
 const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1daGWs2SPXQsN9YLJBggtyX0Wdqpv2kgBcB4mOUrhe7M/edit?gid=1870385864#gid=1870385864";
 
 export default function App() {
   const [items, setItems] = useState<StockItem[]>([]);
+
+  // Etiquetas Brother: itens marcados na Consulta (mesmo fluxo da plataforma de devoluções)
+  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set());
+  const [isBrotherModalOpen, setIsBrotherModalOpen] = useState<boolean>(false);
+  const [isSupplierLabelModalOpen, setIsSupplierLabelModalOpen] = useState<boolean>(false);
+
+  const handleToggleLabelSelect = (idStock: string) => {
+    if (!idStock) return;
+    setSelectedLabelIds(prev => {
+      const next = new Set(prev);
+      if (next.has(idStock)) next.delete(idStock);
+      else next.add(idStock);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAllPage = (ids: string[], select: boolean) => {
+    setSelectedLabelIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => (select ? next.add(id) : next.delete(id)));
+      return next;
+    });
+  };
+
+  const selectedLabelItems = useMemo(
+    () => items.filter(i => selectedLabelIds.has(i.idStock)),
+    [items, selectedLabelIds]
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [source, setSource] = useState<'google_sheets' | 'fallback_sample' | 'custom_csv'>('google_sheets');
   const [statusMessage, setStatusMessage] = useState<string | undefined>();
@@ -745,13 +775,54 @@ export default function App() {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {/* Row-by-Row Query Results Table */}
-                  <ItemList
-                    items={filteredItems}
-                    selectedItem={selectedItem}
-                    onSelectItem={(item) => handleOpenDetailModal(item, filteredItems)}
-                    theme={theme}
-                  />
+                  <div className="space-y-4">
+                    {/* Etiquetas: selecione itens na tabela ou digite direto no formulário */}
+                    <div className="flex items-center justify-between flex-wrap gap-2 px-1">
+                      <span className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {selectedLabelIds.size > 0
+                          ? `${selectedLabelIds.size} ${selectedLabelIds.size === 1 ? 'item selecionado' : 'itens selecionados'} para impressão`
+                          : 'Selecione itens abaixo ou digite as etiquetas direto no formulário'}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {selectedLabelIds.size > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLabelIds(new Set())}
+                            className={`text-xs font-semibold ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                          >
+                            Limpar seleção
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setIsBrotherModalOpen(true)}
+                          className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center space-x-2 transition-all cursor-pointer"
+                        >
+                          <Printer className="w-4 h-4" />
+                          <span>Etiquetas {selectedLabelIds.size > 0 ? `(${selectedLabelIds.size})` : ''}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsSupplierLabelModalOpen(true)}
+                          className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-md flex items-center space-x-2 transition-all cursor-pointer"
+                        >
+                          <Truck className="w-4 h-4" />
+                          <span>Etiq Fornecedor</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Row-by-Row Query Results Table */}
+                    <ItemList
+                      items={filteredItems}
+                      selectedItem={selectedItem}
+                      onSelectItem={(item) => handleOpenDetailModal(item, filteredItems)}
+                      theme={theme}
+                      selectedLabelIds={selectedLabelIds}
+                      onToggleLabelSelect={handleToggleLabelSelect}
+                      onToggleSelectAllPage={handleToggleSelectAllPage}
+                    />
+                  </div>
 
                   {/* Inline Selected Item Card (if user prefers inline viewing) */}
                   {selectedItem && !detailModalItem && (
@@ -812,6 +883,23 @@ export default function App() {
         onClose={() => setIsSyncModalOpen(false)}
         webhookUrl={webhookUrl}
         onSaveWebhookUrl={handleSaveWebhookUrl}
+      />
+
+      {/* Etiquetas Brother (avulsas a partir dos itens selecionados) */}
+      <BrotherLabelModal
+        isOpen={isBrotherModalOpen}
+        onClose={() => setIsBrotherModalOpen(false)}
+        selectedItems={selectedLabelItems}
+        onPrinted={() => setSelectedLabelIds(new Set())}
+        theme={theme}
+      />
+
+      {/* Etiquetas de Fornecedor (volumes) */}
+      <SupplierLabelModal
+        isOpen={isSupplierLabelModalOpen}
+        onClose={() => setIsSupplierLabelModalOpen(false)}
+        items={items}
+        theme={theme}
       />
 
       {/* System Documentation & Manual PDF Modal */}

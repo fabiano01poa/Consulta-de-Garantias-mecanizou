@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import crypto from "crypto";
+import zlib from "zlib";
 import { createServer as createViteServer } from "vite";
 import Papa from "papaparse";
 
@@ -605,6 +606,20 @@ async function fetchAndParseGoogleSheet(sheetId: string, gid: string): Promise<S
 }
 
 // Endpoint to fetch Google Sheet CSV data
+// Cloud Run (AI Studio) recusa respostas acima de 32 MB; a planilha inteira em JSON passa de 50 MB.
+// Compacta com gzip quando o navegador aceita (sempre, na prática): fica em torno de 10% do tamanho.
+function sendLargeJson(req: express.Request, res: express.Response, body: unknown) {
+  const json = JSON.stringify(body);
+  res.setHeader("Vary", "Accept-Encoding");
+  if (!/\bgzip\b/.test(String(req.headers["accept-encoding"] || ""))) {
+    return res.type("application/json").send(json);
+  }
+  const gz = zlib.gzipSync(json, { level: 6 });
+  res.setHeader("Content-Encoding", "gzip");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  return res.send(gz);
+}
+
 app.get("/api/sheet-data", async (req, res) => {
   const customUrl = req.query.url as string;
   const forceRefresh = req.query.force === 'true' || req.query.noCache === 'true';
@@ -633,7 +648,7 @@ app.get("/api/sheet-data", async (req, res) => {
     if (targetLocalidade && targetLocalidade !== 'all' && targetLocalidade !== 'todas') {
       filtered = allRows.filter(r => r.localidade?.toLowerCase().includes(targetLocalidade));
     }
-    return res.json({
+    return sendLargeJson(req, res, {
       success: true,
       source: isCached ? "google_sheets_cached" : "google_sheets",
       message: noticeMsg,
@@ -776,23 +791,26 @@ app.post("/api/update-items", async (req, res) => {
           respJson = { raw: respText };
         }
 
-        if (!isHtml && (respJson.success || respJson.updatedCount !== undefined)) {
-          syncedToSheet = true;
-          webhookMessage = "Alterações enviadas e gravadas com sucesso na sua Planilha Google!";
+        const notFound: string[] = Array.isArray(respJson.notFound) ? respJson.notFound : [];
+        if (!isHtml && respJson.success !== false && !respJson.error && (respJson.success || respJson.updatedCount !== undefined)) {
+          syncedToSheet = notFound.length === 0;
+          webhookMessage = notFound.length === 0
+            ? "Alterações gravadas na planilha."
+            : `Gravado em parte. NÃO encontrados na planilha: ${notFound.join(", ")}.`;
         } else {
           const reason = isHtml ? "O Google Apps Script retornou uma página HTML/Login (verifique se 'Quem tem acesso' está como 'Qualquer pessoa')." : (respJson.error || respJson.raw || `Status ${webhookRes.status}`);
-          webhookMessage = `Falha ao gravar na planilha: ${reason}`;
+          webhookMessage = `Alteração NÃO gravada na planilha: ${reason}`;
         }
       } catch (err: any) {
         console.error("Erro ao enviar para Google Apps Script Webhook:", err.message);
-        webhookMessage = "Não foi possível conectar ao Webhook do Google Sheets. As alterações foram salvas no sistema.";
+        webhookMessage = `Alteração NÃO gravada: não foi possível conectar ao Webhook da planilha (${err.message}).`;
       }
     } else {
-      webhookMessage = "Alterações salvas localmente no sistema. Para gravar em tempo real na sua planilha Google, configure a URL do Webhook do Google Apps Script.";
+      webhookMessage = "Alteração NÃO gravada: a gravação na planilha não está configurada (GOOGLE_SHEETS_WEBHOOK_URL).";
     }
 
     return res.json({
-      success: true,
+      success: syncedToSheet,
       updatedCount: updatedItems.length,
       syncedToSheet,
       message: webhookMessage

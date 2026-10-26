@@ -425,8 +425,9 @@ export default function App() {
   };
 
   const syncItemsToServer = async (itemsToSync: StockItem[]) => {
+    let result: { success?: boolean; message?: string } = {};
     try {
-      await fetch('/api/update-items', {
+      const res = await fetch('/api/update-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -434,8 +435,15 @@ export default function App() {
           webhookUrl: webhookUrl || undefined
         })
       });
+      result = await res.json();
     } catch (err) {
       console.error('Failed to sync items to server:', err);
+      result = { success: false, message: 'Alteração NÃO gravada: sem conexão com o servidor.' };
+    }
+    if (result.message) {
+      // Falha fica visível por mais tempo: a alteração só existe neste navegador até a próxima sincronização
+      setStatusMessage(result.message);
+      setTimeout(() => setStatusMessage(undefined), result.success ? 7000 : 30000);
     }
   };
 

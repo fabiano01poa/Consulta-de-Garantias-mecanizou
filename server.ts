@@ -769,7 +769,9 @@ app.post("/api/update-items", async (req, res) => {
       }
     }
 
-    const targetWebhook = webhookUrl || process.env.GOOGLE_SHEETS_WEBHOOK_URL;
+    // A URL dos Secrets (GOOGLE_SHEETS_WEBHOOK_URL) sempre vence; a URL guardada no navegador só vale sem secret.
+    // Antes, uma URL antiga salva em algum navegador era usada no lugar da correta ("Nao autorizado").
+    const targetWebhook = (process.env.GOOGLE_SHEETS_WEBHOOK_URL || "").trim() || webhookUrl;
     let syncedToSheet = false;
     let webhookMessage = "";
 

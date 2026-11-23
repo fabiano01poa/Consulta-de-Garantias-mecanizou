@@ -796,9 +796,15 @@ app.post("/api/update-items", async (req, res) => {
         const notFound: string[] = Array.isArray(respJson.notFound) ? respJson.notFound : [];
         if (!isHtml && respJson.success !== false && !respJson.error && (respJson.success || respJson.updatedCount !== undefined)) {
           syncedToSheet = notFound.length === 0;
+          // Valores recusados pela lista suspensa da planilha (o script devolve o motivo em "invalidos")
+          const invalidos: string[] = Array.isArray(respJson.invalidos) ? respJson.invalidos.map((s: any) => String(s)) : [];
+          const invalidIds = new Set(invalidos.map(s => s.split(" (")[0].trim()));
+          const missing = notFound.filter(id => !invalidIds.has(String(id).trim()));
           webhookMessage = notFound.length === 0
             ? "Alterações gravadas na planilha."
-            : `Gravado em parte. NÃO encontrados na planilha: ${notFound.join(", ")}.`;
+            : "Gravado em parte."
+              + (missing.length ? ` NÃO encontrados na planilha: ${missing.join(", ")}.` : "")
+              + (invalidos.length ? ` Recusados pela lista da planilha: ${invalidos.join("; ")}.` : "");
         } else {
           const reason = isHtml ? "O Google Apps Script retornou uma página HTML/Login (verifique se 'Quem tem acesso' está como 'Qualquer pessoa')." : (respJson.error || respJson.raw || `Status ${webhookRes.status}`);
           webhookMessage = `Alteração NÃO gravada na planilha: ${reason}`;

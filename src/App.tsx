@@ -447,13 +447,16 @@ export default function App() {
     }
   };
 
+  // Mesmo ID pode estar em mais de uma linha da planilha: a linha identifica o registro
+  const rowKey = (i: StockItem) => `${i.idStock}@${i.sheetRowNumber ?? ''}`;
+
   const handleUpdateItem = (updatedItem: StockItem) => {
     updateItemOverrides([updatedItem]);
-    setItems(prev => prev.map(i => i.idStock === updatedItem.idStock ? updatedItem : i));
-    if (selectedItem?.idStock === updatedItem.idStock) {
+    setItems(prev => prev.map(i => rowKey(i) === rowKey(updatedItem) ? updatedItem : i));
+    if (selectedItem && rowKey(selectedItem) === rowKey(updatedItem)) {
       setSelectedItem(updatedItem);
     }
-    if (detailModalItem?.idStock === updatedItem.idStock) {
+    if (detailModalItem && rowKey(detailModalItem) === rowKey(updatedItem)) {
       setDetailModalItem(updatedItem);
     }
     syncItemsToServer([updatedItem]);
@@ -461,8 +464,8 @@ export default function App() {
 
   const handleBatchUpdateStatus = (updatedBatch: StockItem[]) => {
     updateItemOverrides(updatedBatch);
-    const updatedMap = new Map(updatedBatch.map(i => [i.idStock, i]));
-    setItems(prev => prev.map(i => updatedMap.get(i.idStock) || i));
+    const updatedMap = new Map(updatedBatch.map(i => [rowKey(i), i]));
+    setItems(prev => prev.map(i => updatedMap.get(rowKey(i)) || i));
     syncItemsToServer(updatedBatch);
   };
 
